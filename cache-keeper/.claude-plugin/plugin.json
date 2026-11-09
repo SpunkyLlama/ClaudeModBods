@@ -1,0 +1,54 @@
+{
+  "name": "cache-keeper",
+  "version": "1.0.0",
+  "description": "Prompt-cache warm/cold status, tokens and cost, and a nudge to start a fresh chat, with /handoff to carry the conversation over.",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "cacheTtlSeconds": {
+      "type": "number",
+      "title": "Prompt cache lifetime (seconds)",
+      "description": "300 for the 5-minute cache, 3600 for the 1-hour cache.",
+      "default": 3600
+    },
+    "transcriptLine": {
+      "type": "boolean",
+      "title": "Print status after each reply",
+      "description": "Adds a one-line notice to the chat after every reply (the model never reads it, so it costs no tokens). Useful where the app draws no status bar.",
+      "default": true
+    },
+    "nudgeCostUsd": {
+      "type": "number",
+      "title": "Cost nudge (USD)",
+      "description": "Suggest a new chat once the session has cost this much.",
+      "default": 2
+    },
+    "nudgeContextPercent": {
+      "type": "number",
+      "title": "Context nudge (%)",
+      "description": "Suggest a new chat once the context window is this full.",
+      "default": 60
+    },
+    "coldGuard": {
+      "type": "boolean",
+      "title": "Cold-send guard",
+      "description": "After the cache has expired, hold the first message once and show how much context it would re-read uncached. Send again to go ahead.",
+      "default": true
+    },
+    "coldGuardMinPercent": {
+      "type": "number",
+      "title": "Guard minimum context (%)",
+      "description": "The guard stays out of the way until the context is at least this full.",
+      "default": 20
+    },
+    "inChatLine": {
+      "type": "boolean",
+      "title": "Status above the newest reply",
+      "description": "Draw the status line in the chat above the latest reply. Needs an app that attaches a display surface; untested, so off by default.",
+      "default": false
+    }
+  },
+  "license": "MIT",
+  "author": {
+    "name": "libertatum.hanna"
+  }
+}

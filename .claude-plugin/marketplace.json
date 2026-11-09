@@ -1,0 +1,11 @@
+{
+  "name": "cache-keeper-marketplace",
+  "owner": { "name": "libertatum.hanna" },
+  "plugins": [
+    {
+      "name": "cache-keeper",
+      "source": "./cache-keeper",
+      "description": "Prompt-cache warm/cold status, token and cost tracking, and a nudge to start a fresh chat, with /handoff to carry the conversation over."
+    }
+  ]
+}
