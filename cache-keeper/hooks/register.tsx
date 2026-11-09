@@ -36,6 +36,7 @@ type Cfg = {
   isGuard: boolean
   isInChat: boolean
   guardPct: number
+  resumeAwayMs: number
 }
 
 async function compute($: EngineInterface, cfg: Cfg) {
@@ -48,7 +49,17 @@ async function compute($: EngineInterface, cfg: Cfg) {
 
   let cache = '⚪ cache: no data yet'
   let isCold = false
-  if (S.lastAt > 0) {
+  // No reply seen by this mod yet, but the session already holds context and
+  // began well before now: it was resumed. The cache lifetime has very likely
+  // lapsed while it was away, so the first send re-caches the whole context.
+  // Heuristic: startedAt is the first launch, not the last reply, so a resume
+  // within the cache lifetime can still be warm; the wording says "probably".
+  const isResumed =
+    S.lastAt === 0 && tokens > 0 && u.startedAt > 0 && now - u.startedAt > cfg.resumeAwayMs
+  if (isResumed) {
+    isCold = true
+    cache = `🧊 resumed · cache probably cold, next msg re-caches ~${k(tokens)}`
+  } else if (S.lastAt > 0) {
     const left = cfg.ttl - (now - S.lastAt) / 1000
     const total = S.lastRead + S.lastWrite
     const hit = total > 0 ? Math.round((100 * S.lastRead) / total) : 0
@@ -88,6 +99,7 @@ export const register: Register = (on, options) => {
     isGuard: options.coldGuard !== false,
     isInChat: options.inChatLine === true,
     guardPct: num(options.coldGuardMinPercent, 20),
+    resumeAwayMs: 60_000,
   }
   let timer: { cancel: () => void } | undefined
 
