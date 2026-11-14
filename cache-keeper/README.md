@@ -39,3 +39,13 @@ tsc -p . --noEmit
 ```
 
 Don't add an empty `hooks/register.ts` next to `hooks/register.tsx`: when both exist, `tsc` compiles only the `.ts` file and silently skips `register.tsx`.
+
+## Tests
+
+`tests/lifetime.test.ts` covers the lifetime learner (`classify` and `learn` in `hooks/lifetime.ts`). It has no dependencies; Node 22.6 or newer runs it directly:
+
+```
+node --experimental-strip-types tests/lifetime.test.ts
+```
+
+It prints one line per scenario and exits non-zero if any fail. `tsc -p . --noEmit` checks it too.
