@@ -1,11 +1,14 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import { classify, learn } from './lifetime'
+import { learn, observe } from './lifetime'
 import type { Snap } from '../types'
 
 const PANE = 'cache-keeper'
 const line = atom({ plugin: 'cache-keeper', key: 'line' } as const, '')
+// True from a /handoff fork until the next reply: that fork used the cache
+// without a reply, so the next reply is not evidence of the lifetime.
+const forked = atom({ plugin: 'cache-keeper', key: 'forked' } as const, false)
 // Kept in session state, not module variables: the app may reload the module
 // between turns, and these must survive that. Change the tag if Snap changes.
 const snap = atom(
@@ -160,9 +163,10 @@ export const register: Register = (on, options) => {
     const now = await $.clock.now()
     const isFinal = r.stopReason !== 'tool_use'
     const before = await read($, snap)
+    const isAfterFork = await read($, forked)
     const mark =
       cfg.isAuto && before.lastAt > 0
-        ? classify((now - before.lastAt) / 1000, x.cache_read_input_tokens, x.cache_creation_input_tokens)
+        ? observe((now - before.lastAt) / 1000, x.cache_read_input_tokens, x.cache_creation_input_tokens, isAfterFork)
         : null
     const learned = mark ? learn(before.evidence, mark, before.ttl) : null
     await update($, snap, s => ({
@@ -175,6 +179,9 @@ export const register: Register = (on, options) => {
       turns: isFinal ? s.turns + 1 : s.turns,
       held: false, // a fresh reply re-arms the cold-send guard
     }))
+    if (isAfterFork) {
+      await update($, forked, () => false)
+    }
     if (learned) {
       await $.store.set('ttl', { ttl: learned.ttl, evidence: learned.evidence })
     }
@@ -287,6 +294,11 @@ export const register: Register = (on, options) => {
   on('command.run', { command: 'handoff' }, async $ => {
     // the fork reads the existing transcript from the cache: cheapest while warm
     const r = await $.model.fork({ prompt: HANDOFF_PROMPT, effort: 'low' })
+    // Any fork that sent a request touched the cache (even one cut short), and
+    // turn.step never sees it: tell the next reply not to treat itself as evidence.
+    if (r.isAnswered || r.reason !== 'nothing-to-fork') {
+      await update($, forked, () => true)
+    }
     if (!r.isAnswered) {
       return { text: `Cache Keeper: no handoff (${r.reason}). Nothing to summarize yet?` }
     }

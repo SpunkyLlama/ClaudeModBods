@@ -23,6 +23,16 @@ export function classify(gapS: number, read: number, write: number): 'w' | 'c' |
   return null
 }
 
+// A reply is no evidence when something other than the main thread has used the
+// cache since the previous reply: /handoff forks the main transcript, which on
+// some models reads (and so refreshes) the main entry and on others writes an
+// entry of its own and leaves the main one standing. The usage numbers cannot
+// say which, and either guess can teach the wrong lifetime, so the first reply
+// after such a fork learns nothing.
+export function observe(gapS: number, read: number, write: number, isAfterFork: boolean): 'w' | 'c' | null {
+  return isAfterFork ? null : classify(gapS, read, write)
+}
+
 // A warm reply proves the 1-hour cache at once. One cold reply could be something
 // else (a model switch, a changed system prompt), so the 5-minute cache needs two
 // cold replies in a row, with no warm one between them.

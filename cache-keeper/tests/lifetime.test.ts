@@ -5,7 +5,7 @@
 //   node --experimental-strip-types tests/lifetime.test.ts
 // It prints one line per scenario and exits non-zero if any fails.
 
-import { classify, learn, MIN_GAP_S } from '../hooks/lifetime.ts'
+import { classify, learn, observe, MIN_GAP_S } from '../hooks/lifetime.ts'
 
 declare const console: { log(...a: unknown[]): void }
 declare const process: { exitCode?: number }
@@ -106,6 +106,25 @@ console.log('learn: a whole history, replayed')
     got.push(s.ttl)
   }
   check('ttl after each reply: 0, 300, 3600, 3600, 300', got, steps.map(x => x[1]))
+}
+
+// ── observe(): a reply right after a /handoff fork is not evidence ──────────
+console.log('observe: the first reply after a /handoff fork')
+check('no fork: same answer as classify (warm)', observe(600, 50000, 0, false), classify(600, 50000, 0))
+check('no fork: same answer as classify (cold)', observe(600, 0, 50000, false), classify(600, 0, 50000))
+check('after a fork, a warm-looking reply says nothing', observe(600, 50000, 0, true), null)
+check('after a fork, a cold-looking reply says nothing', observe(600, 0, 50000, true), null)
+{
+  let differs = 0
+  for (const gap of [0, 329, 330, 3300, 3301, 7200]) {
+    for (const read of [0, 1000, 80000]) {
+      for (const write of [0, 1000, 80000]) {
+        if (observe(gap, read, write, false) !== classify(gap, read, write)) differs++
+        if (observe(gap, read, write, true) !== null) differs++
+      }
+    }
+  }
+  check('over a grid: without a fork it is classify, with one it is always null', differs, 0)
 }
 
 console.log(`\n${passed} passed, ${failures.length} failed`)

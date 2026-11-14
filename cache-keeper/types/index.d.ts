@@ -16,6 +16,6 @@ export type Snap = {
 
 declare module 'claude-code' {
   interface PluginState {
-    'cache-keeper': { line: Line; snap: Shaped<Snap> }
+    'cache-keeper': { line: Line; snap: Shaped<Snap>; forked: boolean }
   }
 }
