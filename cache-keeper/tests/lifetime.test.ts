@@ -5,7 +5,7 @@
 //   node --experimental-strip-types tests/lifetime.test.ts
 // It prints one line per scenario and exits non-zero if any fails.
 
-import { classify, learn, observe, MIN_GAP_S } from '../hooks/lifetime.ts'
+import { classify, learn, observe, tokensOf, MIN_GAP_S } from '../hooks/lifetime.ts'
 
 declare const console: { log(...a: unknown[]): void }
 declare const process: { exitCode?: number }
@@ -126,6 +126,12 @@ check('after a fork, a cold-looking reply says nothing', observe(600, 0, 50000, 
   }
   check('over a grid: without a fork it is classify, with one it is always null', differs, 0)
 }
+
+// ── tokensOf(): what the running total (Σ) adds for one call ────────────────
+console.log('tokensOf: tokens processed')
+check('adds all four counts', tokensOf({ input_tokens: 10, output_tokens: 20, cache_read_input_tokens: 300000, cache_creation_input_tokens: 4000 }), 304030)
+check('an all-zero call adds nothing', tokensOf({ input_tokens: 0, output_tokens: 0, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 }), 0)
+check('a cache read weighs the same as an output token (processed, not cost)', tokensOf({ input_tokens: 0, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 }), tokensOf({ input_tokens: 0, output_tokens: 0, cache_read_input_tokens: 1, cache_creation_input_tokens: 0 }))
 
 console.log(`\n${passed} passed, ${failures.length} failed`)
 if (failures.length > 0) process.exitCode = 1

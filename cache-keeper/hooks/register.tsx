@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import { learn, observe } from './lifetime'
+import { learn, observe, tokensOf } from './lifetime'
 import type { Snap } from '../types'
 
 const PANE = 'cache-keeper'
@@ -156,7 +156,7 @@ export const register: Register = (on, options) => {
     if (e.agentId !== undefined) {
       await update($, snap, s => ({
         ...s,
-        spent: s.spent + x.input_tokens + x.output_tokens + x.cache_read_input_tokens + x.cache_creation_input_tokens,
+        spent: s.spent + tokensOf(x),
       }))
       return r
     }
@@ -175,7 +175,7 @@ export const register: Register = (on, options) => {
       lastAt: now,
       lastRead: x.cache_read_input_tokens,
       lastWrite: x.cache_creation_input_tokens,
-      spent: s.spent + x.input_tokens + x.output_tokens + x.cache_read_input_tokens + x.cache_creation_input_tokens,
+      spent: s.spent + tokensOf(x),
       turns: isFinal ? s.turns + 1 : s.turns,
       held: false, // a fresh reply re-arms the cold-send guard
     }))
@@ -298,6 +298,9 @@ export const register: Register = (on, options) => {
     // turn.step never sees it: tell the next reply not to treat itself as evidence.
     if (r.isAnswered || r.reason !== 'nothing-to-fork') {
       await update($, forked, () => true)
+      // ...and its tokens are real, so they belong in the running total too.
+      const spentByFork = tokensOf(r.usage)
+      await update($, snap, s => ({ ...s, spent: s.spent + spentByFork }))
     }
     if (!r.isAnswered) {
       return { text: `Cache Keeper: no handoff (${r.reason}). Nothing to summarize yet?` }

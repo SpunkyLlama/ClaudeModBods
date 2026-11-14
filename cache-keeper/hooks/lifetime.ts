@@ -23,6 +23,18 @@ export function classify(gapS: number, read: number, write: number): 'w' | 'c' |
   return null
 }
 
+// "Tokens processed" for one model call: everything it read, wrote or generated,
+// cache reads included. This is what the running total (Σ) adds up; it is not a
+// cost, since a cache read is billed at a fraction of an output token.
+export function tokensOf(u: {
+  input_tokens: number
+  output_tokens: number
+  cache_read_input_tokens: number
+  cache_creation_input_tokens: number
+}): number {
+  return u.input_tokens + u.output_tokens + u.cache_read_input_tokens + u.cache_creation_input_tokens
+}
+
 // A reply is no evidence when something other than the main thread has used the
 // cache since the previous reply: /handoff forks the main transcript, which on
 // some models reads (and so refreshes) the main entry and on others writes an
