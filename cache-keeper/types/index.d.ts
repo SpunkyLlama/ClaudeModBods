@@ -8,6 +8,8 @@ export type Snap = {
   spent: number // all tokens billed this session
   hasNudged: boolean
   held: boolean // the cold-send guard already held a message since the last reply
+  ttl: number // learned cache lifetime in seconds; 0 until learned
+  evidence: string // last 3 observations: w = warm after a long gap, c = cold after one
 }
 
 declare module 'claude-code' {

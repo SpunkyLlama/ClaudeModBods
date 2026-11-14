@@ -1,6 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
+import { classify, learn } from './lifetime'
 import type { Snap } from '../types'
 
 const PANE = 'cache-keeper'
@@ -9,8 +10,8 @@ const line = atom({ plugin: 'cache-keeper', key: 'line' } as const, '')
 // between turns, and these must survive that. Change the tag if Snap changes.
 const snap = atom(
   { plugin: 'cache-keeper', key: 'snap' } as const,
-  { lastAt: 0, lastRead: 0, lastWrite: 0, turns: 0, spent: 0, hasNudged: false, held: false },
-  { shape: 'snap-2' },
+  { lastAt: 0, lastRead: 0, lastWrite: 0, turns: 0, spent: 0, hasNudged: false, held: false, ttl: 0, evidence: '' },
+  { shape: 'snap-3' },
 )
 
 const num = (v: unknown, fallback: number) =>
@@ -30,6 +31,7 @@ const HANDOFF_PROMPT =
 
 type Cfg = {
   ttl: number
+  isAuto: boolean
   nudgeUsd: number
   nudgePct: number
   isTranscript: boolean
@@ -37,6 +39,16 @@ type Cfg = {
   isInChat: boolean
   guardPct: number
   resumeAwayMs: number
+}
+
+// The lifetime to count down from: what was learned, else the setting.
+function ttlFor(s: Snap, cfg: Cfg) {
+  return cfg.isAuto && s.ttl > 0 ? s.ttl : cfg.ttl
+}
+
+const lifeTag = (s: Snap, cfg: Cfg) => {
+  const t = ttlFor(s, cfg)
+  return `${t >= 3600 ? '1h' : t >= 300 ? `${Math.round(t / 60)}m` : `${t}s`}${cfg.isAuto && s.ttl > 0 ? '✓' : '?'}`
 }
 
 async function compute($: EngineInterface, cfg: Cfg) {
@@ -60,11 +72,11 @@ async function compute($: EngineInterface, cfg: Cfg) {
     isCold = true
     cache = `🧊 resumed · cache probably cold, next msg re-caches ~${k(tokens)}`
   } else if (S.lastAt > 0) {
-    const left = cfg.ttl - (now - S.lastAt) / 1000
+    const left = ttlFor(S, cfg) - (now - S.lastAt) / 1000
     const total = S.lastRead + S.lastWrite
     const hit = total > 0 ? Math.round((100 * S.lastRead) / total) : 0
     if (left > 0) {
-      cache = `🔥 warm ${clock(left)}${left < 60 ? ' ⚡reply soon' : ''} · ${hit}% hit`
+      cache = `🔥 warm ${clock(left)}${left < 60 ? ' ⚡reply soon' : ''} · ${hit}% hit · ${lifeTag(S, cfg)}`
     } else {
       isCold = true
       cache = `🧊 cold · next msg re-caches ~${k(tokens)}`
@@ -93,6 +105,7 @@ async function draw($: EngineInterface, cfg: Cfg) {
 export const register: Register = (on, options) => {
   const cfg: Cfg = {
     ttl: num(options.cacheTtlSeconds, 3600),
+    isAuto: options.autoDetectTtl !== false,
     nudgeUsd: num(options.nudgeCostUsd, 2),
     nudgePct: num(options.nudgeContextPercent, 60),
     isTranscript: options.transcriptLine !== false,
@@ -113,6 +126,12 @@ export const register: Register = (on, options) => {
       description: 'Summarize this chat into HANDOFF.md to paste into a new chat',
     })
     void $.ui.open({ id: PANE, title: 'Cache Keeper' })
+    // The lifetime belongs to the account, not the chat: reuse what an earlier
+    // session learned.
+    const saved = (await $.store.get('ttl')) as { ttl?: number; evidence?: string } | undefined
+    if (saved && typeof saved.ttl === 'number' && saved.ttl > 0) {
+      await update($, snap, s => (s.ttl > 0 ? s : { ...s, ttl: saved.ttl as number, evidence: String(saved.evidence ?? '') }))
+    }
     timer?.cancel()
     timer = $.clock.every(5000, () => void draw($, cfg))
     await draw($, cfg)
@@ -129,8 +148,15 @@ export const register: Register = (on, options) => {
     const x = r.usage
     const now = await $.clock.now()
     const isFinal = r.stopReason !== 'tool_use'
+    const before = await read($, snap)
+    const mark =
+      cfg.isAuto && before.lastAt > 0
+        ? classify((now - before.lastAt) / 1000, x.cache_read_input_tokens, x.cache_creation_input_tokens)
+        : null
+    const learned = mark ? learn(before.evidence, mark, before.ttl) : null
     await update($, snap, s => ({
       ...s,
+      ...(learned ?? {}),
       lastAt: now,
       lastRead: x.cache_read_input_tokens,
       lastWrite: x.cache_creation_input_tokens,
@@ -138,6 +164,9 @@ export const register: Register = (on, options) => {
       turns: isFinal ? s.turns + 1 : s.turns,
       held: false, // a fresh reply re-arms the cold-send guard
     }))
+    if (learned) {
+      await $.store.set('ttl', { ttl: learned.ttl, evidence: learned.evidence })
+    }
     const d = await draw($, cfg)
     if (isFinal) {
       if (d.isHot && !(await read($, snap)).hasNudged) {
@@ -163,7 +192,8 @@ export const register: Register = (on, options) => {
     }
     const s = await read($, snap)
     const now = await $.clock.now()
-    const isCold = s.lastAt > 0 && now - s.lastAt > cfg.ttl * 1000
+    const ttl = ttlFor(s, cfg)
+    const isCold = s.lastAt > 0 && now - s.lastAt > ttl * 1000
     if (!isCold || s.held) {
       return next(e)
     }
@@ -174,7 +204,7 @@ export const register: Register = (on, options) => {
     await update($, snap, x => ({ ...x, held: true }))
     return {
       drop:
-        `Cache Keeper: the cache expired ${clock((now - s.lastAt) / 1000 - cfg.ttl)} ago, so this message ` +
+        `Cache Keeper: the cache expired ${clock((now - s.lastAt) / 1000 - ttl)} ago, so this message ` +
         `re-reads about ${k(context.tokens ?? 0)} tokens (${context.percent}% of context) uncached. ` +
         `Send it again to go ahead, or /handoff and start a fresh chat.`,
     }
@@ -232,9 +262,13 @@ export const register: Register = (on, options) => {
     const d = await compute($, cfg)
     const s = await read($, snap)
     const surfaces = await $.session.surfaces()
+    const life =
+      cfg.isAuto && s.ttl > 0
+        ? `cache lifetime ${lifeTag(s, cfg)} learned (evidence ${s.evidence || 'none'})`
+        : `cache lifetime ${lifeTag(s, cfg)} assumed, not yet learned`
     return {
       text:
-        `${d.text}\n(${s.turns} turns seen; display surfaces: ` +
+        `${d.text}\n(${s.turns} turns seen; ${life}; display surfaces: ` +
         `${surfaces.length === 0 ? 'none attached, so no band/pane can draw' : surfaces.join(', ')})`,
     }
   })
