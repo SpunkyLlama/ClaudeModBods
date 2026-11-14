@@ -1,5 +1,3 @@
-import type { Shaped } from 'claude-code'
-
 export type Line = string
 
 export type Snap = {
@@ -14,8 +12,13 @@ export type Snap = {
   evidence: string // last 3 observations: w = warm after a long gap, c = cold after one
 }
 
+// What claude-code's Shaped<Snap> is, written out: an atom created with
+// { shape } needs its key declared this way, and the validator rejects a types
+// file that imports anything.
+export type SnapShaped = { shape: string; value: Snap }
+
 declare module 'claude-code' {
   interface PluginState {
-    'cache-keeper': { line: Line; snap: Shaped<Snap>; forked: boolean }
+    'cache-keeper': { line: Line; snap: SnapShaped; forked: boolean }
   }
 }

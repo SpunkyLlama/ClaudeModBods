@@ -5,6 +5,8 @@
 //   node --experimental-strip-types tests/lifetime.test.ts
 // It prints one line per scenario and exits non-zero if any fails.
 
+// Node needs the .ts extension; tsc and the validator do not all allow it.
+// @ts-ignore
 import { classify, learn, observe, tokensOf, MIN_GAP_S } from '../hooks/lifetime.ts'
 
 declare const console: { log(...a: unknown[]): void }
