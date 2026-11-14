@@ -88,7 +88,7 @@ async function compute($: EngineInterface, cfg: Cfg) {
   if (isHot) {
     parts.push(
       isCold
-        ? '⚠ cold + big context: /handoff, then /clear'
+        ? '⚠ cold + big context: /handoff, then start a new chat'
         : '⚠ getting pricey: /handoff, then start a new chat',
     )
   }
@@ -146,6 +146,17 @@ export const register: Register = (on, options) => {
       return r
     }
     const x = r.usage
+    // A subagent (or an engine fork) has its own prompt prefix: its reads and
+    // writes say nothing about the main chat's cache. Count its tokens in the
+    // running total, but keep it out of the cache state, the lifetime learner,
+    // the nudge and the transcript line.
+    if (e.agentId !== undefined) {
+      await update($, snap, s => ({
+        ...s,
+        spent: s.spent + x.input_tokens + x.output_tokens + x.cache_read_input_tokens + x.cache_creation_input_tokens,
+      }))
+      return r
+    }
     const now = await $.clock.now()
     const isFinal = r.stopReason !== 'tool_use'
     const before = await read($, snap)
@@ -285,7 +296,8 @@ export const register: Register = (on, options) => {
     return {
       text:
         `Handoff saved to ${path} (${paid > 1000 ? `cache was cold, re-cached ${k(paid)} tokens` : 'cache was warm, cheap'}).\n\n` +
-        `${r.text}\n\n— Now /clear (or open a new chat) and paste this, or say "read HANDOFF.md and continue".`,
+        `${r.text}\n\n— Now start a new chat and paste this (Claude Code also has /clear). ` +
+        `Or say "read HANDOFF.md and continue" if the new chat can see that file.`,
     }
   })
 }
