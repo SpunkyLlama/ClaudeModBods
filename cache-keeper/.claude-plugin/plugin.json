@@ -1,13 +1,13 @@
 {
   "name": "cache-keeper",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Prompt-cache warm/cold status, tokens and cost, and a nudge to start a fresh chat, with /handoff to carry the conversation over.",
   "types": "./types/index.d.ts",
   "userConfig": {
     "cacheTtlSeconds": {
       "type": "number",
-      "title": "Prompt cache lifetime (seconds)",
-      "description": "300 for the 5-minute cache, 3600 for the 1-hour cache.",
+      "title": "Prompt cache lifetime, fallback (seconds)",
+      "description": "Used until the mod has learned your real lifetime (see autoDetectTtl): 300 for the 5-minute cache, 3600 for the 1-hour cache.",
       "default": 3600
     },
     "transcriptLine": {
@@ -45,6 +45,12 @@
       "title": "Status above the newest reply",
       "description": "Draw the status line in the chat above the latest reply. Needs an app that attaches a display surface; untested, so off by default.",
       "default": false
+    },
+    "autoDetectTtl": {
+      "type": "boolean",
+      "title": "Learn the cache lifetime",
+      "description": "Watch replies that come after a long pause: still cached means the 1-hour cache, cold twice means the 5-minute cache. The result is remembered across sessions.",
+      "default": true
     }
   },
   "license": "MIT",
