@@ -29,3 +29,13 @@ Where the app draws mod UI (the terminal CLI), the status shows in a band above 
 ```
 /plugin install cache-keeper --marketplace <owner>/<repo>
 ```
+
+## Type-check
+
+`tsc` needs the engine's API types, which the app writes to `.claude-plugin/types/` whenever the mod loads (that folder is not tracked). Load the mod once, then from this folder:
+
+```
+tsc -p . --noEmit
+```
+
+Don't add an empty `hooks/register.ts` next to `hooks/register.tsx`: when both exist, `tsc` compiles only the `.ts` file and silently skips `register.tsx`.
