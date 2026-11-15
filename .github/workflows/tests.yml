@@ -1,0 +1,54 @@
+name: Tests
+
+# Offline checks for every mod: its tests and the plugin validator.
+# No secrets. tsc is not run here: the engine writes the API types into
+# .claude-plugin/types/ when the app loads a mod, so a fresh runner has none.
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run each mod's tests
+        run: |
+          set -e
+          for t in */tests/*.test.ts; do
+            echo "== $t"
+            (cd "$(dirname "$(dirname "$t")")" && node --experimental-strip-types "tests/$(basename "$t")")
+          done
+
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install the Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Validate each mod
+        run: |
+          set -e
+          for p in */.claude-plugin/plugin.json; do
+            d="$(dirname "$(dirname "$p")")"
+            echo "== $d"
+            claude plugin validate --strict "$d"
+          done
