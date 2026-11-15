@@ -1,6 +1,6 @@
 {
   "name": "cache-keeper",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Prompt-cache warm/cold status, tokens and cost, and a nudge to start a fresh chat, with /handoff to carry the conversation over.",
   "types": "./types/index.d.ts",
   "userConfig": {
@@ -51,6 +51,18 @@
       "title": "Learn the cache lifetime",
       "description": "Watch replies that come after a long pause: still cached means the 1-hour cache, cold twice means the 5-minute cache. The result is remembered across sessions.",
       "default": true
+    },
+    "pinnedFile": {
+      "type": "string",
+      "title": "Pinned list file",
+      "description": "/handoff appends one section of this file to HANDOFF.md, verbatim, so a list survives the under-400-word summary. A path inside the project folder. Empty turns it off; a missing file is skipped.",
+      "default": "PLAN.md"
+    },
+    "pinnedHeading": {
+      "type": "string",
+      "title": "Pinned list heading",
+      "description": "The heading that starts the section to copy, such as \"## Projects\". It runs to the next heading of the same or higher level.",
+      "default": "## Projects"
     }
   },
   "license": "MIT",
