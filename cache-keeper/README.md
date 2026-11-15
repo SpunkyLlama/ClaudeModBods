@@ -27,7 +27,7 @@ Where the app draws mod UI (the terminal CLI), the status shows in a band above 
 ## Install
 
 ```
-/plugin install cache-keeper --marketplace <owner>/<repo>
+/plugin install cache-keeper --marketplace SpunkyLlama/claudemodbods
 ```
 
 ## Type-check

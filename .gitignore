@@ -1,0 +1,17 @@
+# Overwritten by every /handoff: scratch, never a place for lists.
+HANDOFF.md
+
+# continual-learning hook (skills-plugins-hooks-agents) writes this per repo.
+.claude/learnings.db
+
+# Written by the engine whenever a mod loads.
+.claude-plugin/types/
+
+# Python tooling caches, if a mod or script uses them.
+__pycache__/
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
