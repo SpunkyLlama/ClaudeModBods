@@ -22,10 +22,11 @@ have been lost before.
 Status words: **doing**, **next**, **gated** (needs a decision or something
 else first), **parked**, **done**.
 
-1. **ModBods housekeeping** (doing). `CLAUDE.md`, memory tier (standard,
-   from `benjamininja/project-memory-template`), CI, README fixes. Owner steps
-   after the PR merges: branch protection, auto-delete of merged branches,
-   delete the four merged `mod/cache-keeper/*` branches in the web UI.
+1. **ModBods housekeeping** (done, PR #3 merged 2026-11-15). `CLAUDE.md`,
+   memory tier (standard, from `benjamininja/project-memory-template`), CI,
+   README fixes. Owner steps still open: branch protection requiring `tests`,
+   auto-delete of merged branches, and deleting `chore/housekeeping` and the
+   four merged `mod/cache-keeper/*` branches in the web UI.
 2. **Brain Dump mod** (next). `/dump <text>` appends a timestamped line to
    `.claude/memory/BRAIN-DUMP.md`. `/dump` alone shows the count and last five.
    `/triage` goes entry by entry: ticket, memory note, or discard. Anything
@@ -79,6 +80,15 @@ else first), **parked**, **done**.
    `setup-project-memory` skill, owner-queue mod, session-dispatch plugin,
    `PROJECT-RULES.md`. Install from a live clone of merged `main`, never a copy.
    Agents never start workflows; the owner presses Run.
+10. **Name privacy** (next, owner decision). The owner does not want their real
+    name public. The public repos expose it in a few tracked files and in some
+    commit metadata. Fix going forward: no hardcoded user paths (read them from
+    environment variables), neutral author and licence fields, and a noreply
+    git email. Old commits keep their metadata unless history is rewritten,
+    which is outward-facing and needs the owner's explicit say-so; the GitHub
+    handle and display name stay public either way. The owner is creating a
+    safe local project folder. The specifics are in the owner's private handoff,
+    not in this public file.
 
 ## [ ] Deferred
 - [ ] Shared code between mods: decide duplicate versus generate.
@@ -86,6 +96,8 @@ else first), **parked**, **done**.
 - [ ] A `docs/` folder and ADRs, once decisions need alternatives written down.
 
 ## Shipped
+- 2026-11-15: ModBods housekeeping, PR #3: standard memory tier, CI (tests and
+  validator both green), README fixes.
 - 2026-11-15: dropped anonymous write policies on `draft_picks` (project 7).
 - 2026-11-14: Cache Keeper PR #2 merged: lifetime learning, subagent filter,
   validator fix, tests.
