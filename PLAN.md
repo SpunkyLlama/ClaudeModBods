@@ -7,15 +7,23 @@ overwritten by every `/handoff`, and lists kept only in chat or in that file
 have been lost before.
 
 ## Working state (2026-11-15)
-- This branch (`chore/housekeeping`) adds `CLAUDE.md`, `PLAN.md`, `MEMORY.md`,
-  `GLOSSARY.md`, `.gitignore`, a `tests` workflow, and fixed README install lines.
-- Cache Keeper 1.1.0 is on `main` (PR #2). 42 offline tests pass and
-  `claude plugin validate --strict` passes.
+- `main` has Cache Keeper 1.2.0 (PR #5) and Brain Dump 0.1.0 (PR #6). Offline
+  tests and `claude plugin validate --strict` pass for both; CI was green on
+  each PR. Neither mod has been tried in a live chat yet.
 
 ## ➡ NEXT
-- Owner reviews and merges the housekeeping PR, then sets branch protection
-  (require the `tests` check) and turns on auto-delete of merged branches.
-- Then Brain Dump (project 2 below).
+- Owner: the live checks (below), branch protection requiring `tests`,
+  auto-delete of merged branches, and deleting merged branches in the web UI.
+- Then Help Desk (project 3) once its gating questions are answered, or the
+  name-privacy fixes (project 10).
+
+## Live checks (owner; Claude cannot run these)
+- Cache Keeper `/handoff`: run it here and confirm the `## Projects` section of
+  `PLAN.md` lands at the bottom of `HANDOFF.md`.
+- Brain Dump: `/dump test`, `/dump`, `/triage`, `/triage discard`; confirm the
+  band shows the count and `.claude/memory/BRAIN-DUMP.md` looks right.
+- Cache lifetime: send a message, wait more than 5.5 minutes, send another, run
+  `/cache`, read the learned evidence.
 
 ## Projects (the list; keep it current)
 
@@ -27,11 +35,15 @@ else first), **parked**, **done**.
    README fixes. Owner steps still open: branch protection requiring `tests`,
    auto-delete of merged branches, and deleting `chore/housekeeping` and the
    four merged `mod/cache-keeper/*` branches in the web UI.
-2. **Brain Dump mod** (next). `/dump <text>` appends a timestamped line to
-   `.claude/memory/BRAIN-DUMP.md`. `/dump` alone shows the count and last five.
-   `/triage` goes entry by entry: ticket, memory note, or discard. Anything
-   that creates a GitHub issue is outward-facing, so it confirms each one. A
-   band shows the unsorted count. Open: where the file lives for non-repo use.
+2. **Brain Dump mod** (done, 0.1.0, PR #6 merged; live check pending).
+   `/dump <text>` appends a timestamped line to `.claude/memory/BRAIN-DUMP.md`.
+   `/dump` alone shows the count and last five. `/triage` marks the oldest
+   unsorted entry ticket, note or discard and never deletes. A band shows the
+   unsorted count. Differences from the first idea: `ticket` and `note` only
+   mark the entry and tell the owner to ask Claude, which confirms before filing
+   an issue or editing `MEMORY.md`, so the mod makes no network calls. Open:
+   where the file lives outside a repo (today: under the folder the chat opened
+   in). Follow-ups if wanted: act on a verdict itself, or a `/triage` list view.
 3. **Help Desk mod** (gated). Modeled on the "Helper Desk" in Stephen Smith's
    article (October 2026): Claude's to-do list above the prompt with in-progress
    items flashing, plus a side pane with a live card per subagent showing what
@@ -45,12 +57,11 @@ else first), **parked**, **done**.
    Windows machine (his handoff doc: `docs/handoff/baseball-session-dispatch.md`).
    Do not rebuild it. Later, optionally, a thin read-only mod showing open items
    from `MEMORY.md`, GitHub issue and PR state, and the queue file.
-5. **Cache Keeper upkeep** (next, small).
-   - Live check that the cache lifetime is learned: send a message, wait more
-     than 5.5 minutes, send another, run `/cache`, read the learned evidence.
-   - Make `/handoff` keep a pinned projects list. Today it overwrites
-     `HANDOFF.md` with a fresh summary under 400 words, which is how lists
-     vanished. Idea: have it append this file's "Projects" section verbatim.
+5. **Cache Keeper upkeep** (next, owner steps left).
+   - Live check that the cache lifetime is learned (see Live checks above).
+   - Done, 1.2.0, PR #5: `/handoff` appends one section of a file verbatim
+     (`pinnedFile` default `PLAN.md`, `pinnedHeading` default `## Projects`) so
+     a list survives the under-400-word summary. Not yet seen in a live chat.
    - The in-chat status line is untested and off by default.
 6. **Fantrax** (gated, owner decision). Fantrax's Terms ban automated scraping
    and non-published access, so the weekly Selenium job probably conflicts.
@@ -96,6 +107,10 @@ else first), **parked**, **done**.
 - [ ] A `docs/` folder and ADRs, once decisions need alternatives written down.
 
 ## Shipped
+- 2026-11-15: Brain Dump 0.1.0, PR #6: `/dump`, `/triage`, unsorted-count band,
+  16 offline tests.
+- 2026-11-15: Cache Keeper 1.2.0, PR #5: `/handoff` appends the pinned list, 11
+  new offline tests.
 - 2026-11-15: ModBods housekeeping, PR #3: standard memory tier, CI (tests and
   validator both green), README fixes.
 - 2026-11-15: dropped anonymous write policies on `draft_picks` (project 7).

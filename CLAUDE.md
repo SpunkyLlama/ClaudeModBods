@@ -31,7 +31,7 @@ new summary under 400 words, so never keep a list there. It is gitignored.
 | Mod | Folder | Status |
 |---|---|---|
 | Cache Keeper | `cache-keeper/` | Shipped, version 1.2.0 |
-| Brain Dump | not started | Planned, next |
+| Brain Dump | `brain-dump/` | Shipped, version 0.1.0 (live check pending) |
 | Help Desk | not started | Planned (task list and subagent monitor with tokens and cost) |
 
 ## Working style

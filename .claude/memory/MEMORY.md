@@ -1,7 +1,7 @@
 # Memory Index: ClaudeModBods (project)
 
 > Project-local memory. Cross-project preferences live in root `~/.claude/`.
-> Last consolidated: 2026-11-15.
+> Last consolidated: 2026-11-15 (Brain Dump and Cache Keeper 1.2.0 added).
 
 ## Active Files
 
@@ -19,9 +19,20 @@
   `/handoff` learns nothing, because the fork touches the cache unseen.
 - The running total (Σ) means tokens processed, and includes the fork's tokens.
 - `/handoff` writes `HANDOFF.md` in the session's working directory, replacing the
-  whole file, from a fork under 400 words. Never keep a list in it.
+  whole file, from a fork under 400 words. Never keep a list in it. Since 1.2.0 it
+  appends the `## Projects` section of `PLAN.md` verbatim (settings `pinnedFile`,
+  `pinnedHeading`); a missing file or heading is skipped.
 - The engine writes `.claude-plugin/types/` whenever a mod loads. It is not
   tracked, and `tsc -p . --noEmit` only works once the app has loaded the mod.
+
+## Brain Dump: how it works
+
+- One file, `.claude/memory/BRAIN-DUMP.md` under the session's working folder, one
+  entry per line: `- [ ] YYYY-MM-DD HH:MM text` (UTC), marked `- [x] ... -> verdict`.
+- It only marks entries. It never deletes one, files an issue or edits another
+  file. Helpers are in `hooks/dump.ts` so tests run offline.
+- The validator follows `$` only into top-level functions, so helpers that take
+  `$` are declared at the top of `register.tsx`, not inside `register`.
 
 ## Decisions
 
