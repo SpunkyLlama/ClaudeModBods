@@ -2,6 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import { learn, observe, tokensOf } from './lifetime'
+import { extractSection, withPinned } from './pinned'
 import type { Snap } from '../types'
 
 const PANE = 'cache-keeper'
@@ -34,6 +35,8 @@ const HANDOFF_PROMPT =
 
 type Cfg = {
   ttl: number
+  pinnedFile: string // '' = off
+  pinnedHeading: string
   isAuto: boolean
   nudgeUsd: number
   nudgePct: number
@@ -105,9 +108,28 @@ async function draw($: EngineInterface, cfg: Cfg) {
   return r
 }
 
+// Reads the pinned section for /handoff. Top-level so the validator follows $.
+// Fails open: a missing file, missing heading or unreadable file means no list.
+async function readPinned($: any, cwd: string, cfg: Cfg): Promise<string | null> {
+  if (cfg.pinnedFile === '' || cfg.pinnedFile.includes('..') || cfg.pinnedFile.startsWith('/')) {
+    return null
+  }
+  try {
+    const file = `${cwd}/${cfg.pinnedFile}`
+    if (!(await $.fs.exists(file))) {
+      return null
+    }
+    return extractSection((await $.fs.read(file)) as string, cfg.pinnedHeading)
+  } catch {
+    return null
+  }
+}
+
 export const register: Register = (on, options) => {
   const cfg: Cfg = {
     ttl: num(options.cacheTtlSeconds, 3600),
+    pinnedFile: typeof options.pinnedFile === 'string' ? options.pinnedFile.trim() : 'PLAN.md',
+    pinnedHeading: typeof options.pinnedHeading === 'string' ? options.pinnedHeading.trim() : '## Projects',
     isAuto: options.autoDetectTtl !== false,
     nudgeUsd: num(options.nudgeCostUsd, 2),
     nudgePct: num(options.nudgeContextPercent, 60),
@@ -305,12 +327,15 @@ export const register: Register = (on, options) => {
     if (!r.isAnswered) {
       return { text: `Cache Keeper: no handoff (${r.reason}). Nothing to summarize yet?` }
     }
-    const path = `${await $.session.cwd()}/HANDOFF.md`
-    await $.fs.write(path, r.text)
+    const cwd = await $.session.cwd()
+    const path = `${cwd}/HANDOFF.md`
+    const pinned = await readPinned($, cwd, cfg)
+    await $.fs.write(path, withPinned(r.text, pinned, cfg.pinnedFile))
     const paid = r.usage.cache_creation_input_tokens
+    const pinnedNote = pinned === null ? '' : ` Appended the "${cfg.pinnedHeading}" section of ${cfg.pinnedFile} verbatim.`
     return {
       text:
-        `Handoff saved to ${path} (${paid > 1000 ? `cache was cold, re-cached ${k(paid)} tokens` : 'cache was warm, cheap'}).\n\n` +
+        `Handoff saved to ${path} (${paid > 1000 ? `cache was cold, re-cached ${k(paid)} tokens` : 'cache was warm, cheap'}).${pinnedNote}\n\n` +
         `${r.text}\n\n— Now start a new chat and paste this (Claude Code also has /clear). ` +
         `Or say "read HANDOFF.md and continue" if the new chat can see that file.`,
     }

@@ -7,7 +7,7 @@ changes how Claude Code looks and behaves, for any project.
 
 | Mod | What it does | Status |
 | --- | --- | --- |
-| [Cache Keeper](cache-keeper/README.md) | Warm/cold prompt-cache status, tokens and cost, a nudge to start a new chat, and `/handoff`. | Shipped, version 1.1.0 |
+| [Cache Keeper](cache-keeper/README.md) | Warm/cold prompt-cache status, tokens and cost, a nudge to start a new chat, and `/handoff`. | Shipped, version 1.2.0 |
 | Brain Dump | Quick capture of loose ideas into a file, then triage into tickets or notes. | Planned |
 | Help Desk | Claude's to-do list and a live card per subagent, with tokens and cost. | Planned |
 
