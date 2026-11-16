@@ -7,9 +7,10 @@ overwritten by every `/handoff`, and lists kept only in chat or in that file
 have been lost before.
 
 ## Working state (2026-11-15)
-- `main` has Cache Keeper 1.2.0 (PR #5) and Brain Dump 0.1.0 (PR #6). Offline
-  tests and `claude plugin validate --strict` pass for both; CI was green on
-  each PR. Neither mod has been tried in a live chat yet.
+- `main` has Cache Keeper 1.2.0 (PR #5) and Brain Dump 0.2.0 (PRs #6 and #8).
+  Offline tests and `claude plugin validate --strict` pass for both; CI was
+  green on each PR. Neither mod has been tried in a live chat yet, and Brain
+  Dump's Haiku call (`/rewrite`) has never run.
 
 ## ➡ NEXT
 - Owner: the live checks (below), branch protection requiring `tests`,
@@ -20,8 +21,12 @@ have been lost before.
 ## Live checks (owner; Claude cannot run these)
 - Cache Keeper `/handoff`: run it here and confirm the `## Projects` section of
   `PLAN.md` lands at the bottom of `HANDOFF.md`.
-- Brain Dump: `/dump test`, `/dump`, `/triage`, `/triage discard`; confirm the
-  band shows the count and `.claude/memory/BRAIN-DUMP.md` looks right.
+- Brain Dump 0.1.0: `/dump test`, `/dump`, `/triage`, `/triage discard`; confirm
+  the band shows the count and `.claude/memory/BRAIN-DUMP.md` looks right.
+- Brain Dump 0.2.0: `/dump the login page breaks`, `/rewrite` (check the block
+  under the entry), `/answer only on mobile Safari`, `/rewrite redo` (the answer
+  is used and kept), `/rewrite fable-4` (refused by name), then `/triage ticket`
+  on the entry (still works, block kept).
 - Cache lifetime: send a message, wait more than 5.5 minutes, send another, run
   `/cache`, read the learned evidence.
 
@@ -34,8 +39,9 @@ else first), **parked**, **done**.
    memory tier (standard, from `benjamininja/project-memory-template`), CI,
    README fixes. Owner steps still open: branch protection requiring `tests`,
    auto-delete of merged branches, and deleting `chore/housekeeping` and the
-   four merged `mod/cache-keeper/*` branches in the web UI.
-2. **Brain Dump mod** (done, 0.1.0, PR #6 merged; live check pending).
+   four merged `mod/cache-keeper/*` branches in the web UI. (The full list of
+   merged branches is under Known mess in `CLAUDE.md`.)
+2. **Brain Dump mod** (done, 0.2.0, PRs #6 and #8 merged; live check pending).
    `/dump <text>` appends a timestamped line to `.claude/memory/BRAIN-DUMP.md`.
    `/dump` alone shows the count and last five. `/triage` marks the oldest
    unsorted entry ticket, note or discard and never deletes. A band shows the
@@ -44,6 +50,14 @@ else first), **parked**, **done**.
    an issue or editing `MEMORY.md`, so the mod makes no network calls. Open:
    where the file lives outside a repo (today: under the folder the chat opened
    in). Follow-ups if wanted: act on a verdict itself, or a `/triage` list view.
+   0.2.0 added `/rewrite [fable|opus|sonnet|haiku]` (Haiku writes a prompt for
+   the target model via `$.model.complete`, saved under the entry as `  > `
+   lines with an open-questions list; `all` caps at 5, `redo` replaces) and
+   `/answer` (your answers to those questions, fed back on `/rewrite redo`).
+   Guide notes in `hooks/guides.ts` were distilled by hand on 2026-11-16 from
+   Anthropic's prompting pages for Fable 5.2, Opus 5.5, Sonnet 5.5 and Haiku 5.5
+   only; refresh them as models change. Not covered: Opus 5 and 4.8, Sonnet 5,
+   Fable 5 and 5.1 (refused by name).
 3. **Help Desk mod** (gated). Modeled on the "Helper Desk" in Stephen Smith's
    article (October 2026): Claude's to-do list above the prompt with in-progress
    items flashing, plus a side pane with a live card per subagent showing what
@@ -107,6 +121,8 @@ else first), **parked**, **done**.
 - [ ] A `docs/` folder and ADRs, once decisions need alternatives written down.
 
 ## Shipped
+- 2026-11-16: Brain Dump 0.2.0, PR #8: `/rewrite` and `/answer`, 70 offline
+  tests in all.
 - 2026-11-15: Brain Dump 0.1.0, PR #6: `/dump`, `/triage`, unsorted-count band,
   16 offline tests.
 - 2026-11-15: Cache Keeper 1.2.0, PR #5: `/handoff` appends the pinned list, 11

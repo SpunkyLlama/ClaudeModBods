@@ -31,7 +31,7 @@ new summary under 400 words, so never keep a list there. It is gitignored.
 | Mod | Folder | Status |
 |---|---|---|
 | Cache Keeper | `cache-keeper/` | Shipped, version 1.2.0 |
-| Brain Dump | `brain-dump/` | Shipped, version 0.1.0 (live check pending) |
+| Brain Dump | `brain-dump/` | Shipped, version 0.2.0 (live check pending) |
 | Help Desk | not started | Planned (task list and subagent monitor with tokens and cost) |
 
 ## Working style
@@ -92,9 +92,12 @@ runner cannot run it.
 
 ## Known mess
 
-- Merged remote branches need deleting in the web UI. As of 2026-11-15:
-  `feat-resume-state`, `fix-handoff-fork-evidence`, `fix-ignore-subagents`,
-  `feat-ttl-autodetect`, all under `mod/cache-keeper/`.
+- Merged remote branches need deleting in the web UI. As of 2026-11-16, all
+  merged through PRs #2 to #8: `chore/housekeeping`, `docs/plan-update`,
+  `docs/plan-after-brain-dump`, `mod/brain-dump/feat-initial`,
+  `mod/brain-dump/feat-rewrite`, and under `mod/cache-keeper/`:
+  `feat-pinned-list`, `feat-resume-state`, `feat-ttl-autodetect`,
+  `fix-handoff-fork-evidence`, `fix-ignore-subagents`.
 - No branch protection and no auto-delete of merged branches yet. Settings,
   General, "Automatically delete head branches".
 - The live check that the cache lifetime is learned after a pause over 5.5
