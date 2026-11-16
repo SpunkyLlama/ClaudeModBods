@@ -1,8 +1,18 @@
 {
   "name": "brain-dump",
-  "version": "0.1.0",
-  "description": "/dump a thought into a file without leaving the chat; /triage sorts the pile one entry at a time.",
+  "version": "0.2.0",
+  "description": "/dump a thought into a file; /triage sorts the pile; /rewrite turns an entry into a prompt for a Claude model, and /answer feeds its open questions back for a better second pass.",
   "types": "./types/index.d.ts",
   "license": "MIT",
-  "author": { "name": "ClaudeModBods" }
+  "author": {
+    "name": "ClaudeModBods"
+  },
+  "userConfig": {
+    "targetModel": {
+      "type": "string",
+      "title": "Target model for /rewrite",
+      "description": "Which model /rewrite writes the prompt for: fable, opus, sonnet or haiku. Override per call, for example /rewrite sonnet. Haiku always does the writing.",
+      "default": "opus"
+    }
+  }
 }
