@@ -33,6 +33,17 @@
   file. Helpers are in `hooks/dump.ts` so tests run offline.
 - The validator follows `$` only into top-level functions, so helpers that take
   `$` are declared at the top of `register.tsx`, not inside `register`.
+- `/rewrite` saves a block of `  > ` lines directly under an entry (prompt, then
+  `Open questions:`, then `Your answers:`). `parse()` ignores those lines, so
+  `/triage` and entry line numbers are unaffected. Saves re-read the file and
+  skip an entry that changed while Haiku was writing.
+- The writer is `$.model.complete` with `model: 'haiku'`: no tools, no history.
+  The model the prompt is FOR is a separate choice (`targetModel`, default opus).
+- Imports between hook files need a `.ts` extension for the Node test runner, so
+  `rewrite.ts` imports `./guides.ts` behind a `// @ts-ignore`. `register.tsx`
+  imports without extensions.
+- `hooks/guides.ts` holds hand-distilled prompt-writing notes (2026-11-16). They
+  keep only what changes the text of a prompt, not API or harness settings.
 
 ## Decisions
 
