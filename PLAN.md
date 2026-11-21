@@ -31,7 +31,8 @@ have been lost before.
    other personal contact (project 10).
 4. Owner: branch protection requiring `tests` (ModBods) and `pytest` (ETL),
    auto-delete of merged branches, and deleting the merged branches in the web UI.
-5. Then Help Desk (project 3), once its gating questions are answered.
+5. Then Help Desk 0.1.0 (project 3): its gating questions are answered (see the
+   findings there); it needs the owner's go-ahead and a choice on dollars.
 
 ## Live checks (owner; Claude cannot run these)
 - Cache Keeper `/handoff`: run it here and confirm the `## Projects` section of
@@ -73,14 +74,50 @@ else first), **parked**, **done**.
    Anthropic's prompting pages for Fable 5.2, Opus 5.5, Sonnet 5.5 and Haiku 5.5
    only; refresh them as models change. Not covered: Opus 5 and 4.8, Sonnet 5,
    Fable 5 and 5.1 (refused by name).
-3. **Help Desk mod** (gated). Modeled on the "Helper Desk" in Stephen Smith's
-   article (October 2026): Claude's to-do list above the prompt with in-progress
-   items flashing, plus a side pane with a live card per subagent showing what
-   it is doing, its tokens and its cost. Build our own; do not copy the Ben AI
-   pack. Gated on: which events expose the to-do list and the subagent
-   start and finish (check the `plugin-authoring` skill), and how to share
-   Cache Keeper's price table across mods (they cannot import each other).
-   Read-only: it displays, it never blocks or rewrites.
+3. **Help Desk mod** (next, feasible; waiting on the owner's go-ahead).
+   Modeled on the "Helper Desk" in Stephen Smith's article (October 2026):
+   Claude's to-do list above the prompt with in-progress items flashing, plus a
+   side pane with a live card per subagent showing what it is doing, its tokens
+   and its cost. Build our own; do not copy the Ben AI pack. Read-only: it
+   displays, it never blocks or rewrites.
+   Findings 2026-11-21, from the engine's type file for build 2.1.325 and
+   Cache Keeper's source (no code written, nothing run):
+   - To-do list: `tool.call` for `TodoWrite` (todos with pending, in_progress or
+     completed, plus `activeForm`) and for `TaskCreate` / `TaskUpdate` (the
+     newer incremental tools; status also `deleted`, with blocking links). This
+     build has both, and which one a chat uses depends on the app, so the mod
+     must handle both. `tool.call` carries `agentId`, so a subagent's list is
+     told apart from the main one. Not read: the result shapes of `Task*`.
+   - Subagent start: `agent.spawn` (description, subagentType, model,
+     background, parentAgentId); `next(e)` unchanged resolves to `{ model,
+     agentId }`.
+   - Subagent tokens: `turn.step` carries `agentId` on a subagent's loop, and
+     awaiting `next(e)` gives `usage` (four token counts and the model id) per
+     request. Cache Keeper already filters these out with `e.agentId`.
+   - Subagent finish: no plugin event found. `$.agent.list()` gives each agent's
+     `status` (running, idle, completed, failed, killed) and drops entries
+     seconds after they end, so the mod must poll (`$.clock.every`).
+     `turn.complete` carries `agentId` but CLAUDE.md says it never fires in
+     cloud sessions (not tested here). Classic SubagentStop is a settings hook;
+     whether a plugin can subscribe to it is unchecked.
+   - Blind spot: subagents a mod starts itself with `$.agent.spawn` step past
+     plugin hooks. Subagents the model starts with the Agent tool are visible.
+   - The old gating question about sharing "Cache Keeper's price table" rested
+     on a wrong premise: Cache Keeper has no price table. It reads the session
+     total from `$.session.usage().cost.usd`. The engine gives no per-subagent
+     cost, so either show tokens per card plus the engine's session dollars
+     (recommended for 0.1.0: no table to maintain, nothing that can be wrong
+     about prices), or keep a small price table inside Help Desk alone to
+     estimate dollars per card. No cross-mod sharing is needed either way.
+   - Testing limit: `/cache` in a cloud session reported "display surfaces:
+     none attached", so a band or pane cannot draw there. Logic can be tested
+     offline; the display needs an app that attaches a surface (the terminal
+     CLI), so it adds to the owner's live checks.
+   - Smallest first version: a read-only band above the prompt with the to-do
+     list (in-progress item highlighted) and the count of running subagents
+     with their tokens. The side pane of cards comes later.
+   Open: the owner's go-ahead to build 0.1.0, and the option 1 or option 2
+   choice on dollars.
 4. **Project Planner and Manager** (gated, owner decision). Adopt
    benjamininja's planner / builder-manager / owner-queue setup on the owner's
    Windows machine (his handoff doc: `docs/handoff/baseball-session-dispatch.md`).
