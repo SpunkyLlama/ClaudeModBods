@@ -5,7 +5,7 @@
   "types": "./types/index.d.ts",
   "license": "MIT",
   "author": {
-    "name": "ClaudeModBods"
+    "name": "SpunkyLlama"
   },
   "userConfig": {
     "targetModel": {
