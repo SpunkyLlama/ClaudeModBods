@@ -92,10 +92,11 @@ runner cannot run it.
 
 ## Known mess
 
-- Merged remote branches need deleting in the web UI. As of 2026-11-16, all
-  merged through PRs #2 to #8: `chore/housekeeping`, `docs/plan-update`,
-  `docs/plan-after-brain-dump`, `mod/brain-dump/feat-initial`,
-  `mod/brain-dump/feat-rewrite`, and under `mod/cache-keeper/`:
+- Merged remote branches need deleting in the web UI. As of 2026-11-21, all
+  merged through PRs #2 to #10: `chore/housekeeping`, `chore/neutral-author-fields`,
+  `docs/plan-update`, `docs/plan-after-brain-dump`, `docs/brain-dump-0-2-0`,
+  `mod/brain-dump/feat-initial`, `mod/brain-dump/feat-rewrite`, and under
+  `mod/cache-keeper/`:
   `feat-pinned-list`, `feat-resume-state`, `feat-ttl-autodetect`,
   `fix-handoff-fork-evidence`, `fix-ignore-subagents`.
 - No branch protection and no auto-delete of merged branches yet. Settings,

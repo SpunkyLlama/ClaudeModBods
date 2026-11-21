@@ -13,17 +13,17 @@ have been lost before.
   Dump's Haiku call (`/rewrite`) has never run. `/cache` in a real session did
   show the cache lifetime learned as 1h from three warm replies (`www`).
 - ETL `main`: the Fantrax official-API client, loader and RLS draft merged
-  (PRs #15, #16, #17; reviewed 2026-11-21, see project 6). 71 tests pass.
-- Name privacy (project 10): the going-forward fixes are written, committed and
-  pushed, but **no pull request exists yet for either branch**, so `main` in
-  both repos still has the old values: ModBods `chore/neutral-author-fields`,
-  ETL `fix/no-hardcoded-user-paths`. Both merge cleanly on current `main`
-  (checked: ETL plus the branch passes 73 tests).
+  (PRs #15, #16, #17; reviewed 2026-11-21, see project 6). Tests: 71 passed
+  before the privacy PR, 73 after it.
+- Name privacy (project 10): the going-forward fixes are merged (ModBods #10,
+  ETL #18, both checked on GitHub 2026-11-21). `main` in both repos has no
+  tracked account name or user path, and the ETL guard test keeps it that way.
+  ETL `main` passes 73 tests. Old commits are unchanged.
 
 ## ➡ NEXT (in order)
-1. Owner: open and merge the two name-privacy PRs. Before the ETL one, set
-   `FANTRAX_SOURCES_DIR` and `FANTRAX_BATCHES_DIR` on the Windows machine to the
-   old folders (Actions already sets both).
+1. Owner: set `FANTRAX_SOURCES_DIR` and `FANTRAX_BATCHES_DIR` on the Windows
+   machine to the old folders. The old defaults are gone from `main`, so local
+   runs need them (Actions already sets both).
 2. Owner: the live checks (below).
 3. Owner: add `FANTRAX_USER_AGENT` and confirm `SUPABASE_PASSWORD` as Actions
    secrets, run `fantrax_api_etl.yml` as a dry run, then decide on the first
@@ -146,7 +146,7 @@ else first), **parked**, **done**.
    `setup-project-memory` skill, owner-queue mod, session-dispatch plugin,
    `PROJECT-RULES.md`. Install from a live clone of merged `main`, never a copy.
    Agents never start workflows; the owner presses Run.
-10. **Name privacy** (next, owner decision). The owner does not want their real
+10. **Name privacy** (going-forward fixes done; history decision open). The owner does not want their real
     name public. The public repos expose it in a few tracked files and in some
     commit metadata. Fix going forward: no hardcoded user paths (read them from
     environment variables), neutral author and licence fields, and a noreply
@@ -155,14 +155,14 @@ else first), **parked**, **done**.
     handle and display name stay public either way. The owner is creating a
     safe local project folder. The specifics are in the owner's private handoff,
     not in this public file.
-    Status 2026-11-21: the going-forward fixes are written and pushed on
-    ModBods `chore/neutral-author-fields` (public handle in the marketplace
-    owner, plugin author and licence fields; licence reads "and ClaudeModBods
-    contributors") and ETL `fix/no-hardcoded-user-paths` (six hardcoded user
-    paths replaced by env vars, `csv_downloads/` gitignored, a guard test that
-    fails if one returns). No PR exists for either yet. Still open, all owner
-    decisions or steps: open and merge those PRs; set the git email to the
-    noreply address on the owner's own machine; keep personal contact out of the
+    Going-forward fixes done 2026-11-21, merged and checked on GitHub:
+    ModBods #10 (public handle in the marketplace owner, plugin author and
+    licence fields; licence reads "and ClaudeModBods contributors") and ETL #18
+    (six hardcoded user paths replaced by env vars, `csv_downloads/` gitignored,
+    a guard test that fails if one returns). Still open, all owner decisions or
+    steps: set `FANTRAX_SOURCES_DIR` and `FANTRAX_BATCHES_DIR` on the Windows
+    machine; set the git email to the noreply address on the owner's own
+    machine; keep personal contact out of the
     `FANTRAX_USER_AGENT` secret; whether to rewrite history to scrub the old
     commits (a force-push of `main`, never done without explicit say-so). Known
     and accepted: league ids in `leagues.json` and the Supabase project ref and
@@ -176,6 +176,9 @@ else first), **parked**, **done**.
 - [ ] A `docs/` folder and ADRs, once decisions need alternatives written down.
 
 ## Shipped
+- 2026-11-21: name privacy, going-forward fixes: ModBods PR #10 (author, owner
+  and licence fields use the public handle) and ETL PR #18 (no hardcoded user
+  paths, env vars, guard test).
 - 2026-11-16 to 2026-11-21 (ETL, not ModBods): Fantrax API client, loader and
   workflow (PRs #15, #16), RLS on 18 `fantrax` tables (PR #17), `fantrax_api`
   schema applied. Reviewed, nothing run live except read-only API pulls.
