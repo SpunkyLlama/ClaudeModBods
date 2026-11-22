@@ -54,8 +54,9 @@ have been lost before.
 1. Owner: set `FANTRAX_SOURCES_DIR` and `FANTRAX_BATCHES_DIR` on the Windows
    machine to the old folders. The old defaults are gone from `main`, so local
    runs need them (Actions already sets both).
-2. Owner: the live checks (below), now including Help Desk; follow the
-   Objectives checklist under Projects.
+2. Owner: the remaining live checks (below): Brain Dump 0.3.0, the Cache Keeper
+   cold-send guard and one-copy check, the cache lifetime after a pause, and the
+   Help Desk details; follow the Objectives checklist under Projects.
 3. Done 2026-11-22: `FANTRAX_USER_AGENT` added, dry run passed, HoD loaded live
    (owner-approved). The user agent identifies the program only: no name, email
    or other personal contact (project 10). Remaining ETL steps are item 4 of the
@@ -87,18 +88,13 @@ have been lost before.
   offline test covers it.
 - Before reading any Cache Keeper result, list the plugins and make sure only one
   Cache Keeper is loaded (see the two-copies finding above).
-- Help Desk 0.1.1: open its plugin page, Settings tab, switch on "Debug row"
-  (confirmed 2026-11-22: the setting is on Help Desk's plugin page, Settings tab,
-  not in `/config`, and the row drew), start a new chat and send "hi": a row "Help Desk loaded · to-dos 0 · agents 0 · hooks
-  seen: …" should draw. No row: not loaded or no surface. Row draws, counters stay
-  0 after a to-do list or a subagent: the app is not calling the hooks. Counters
-  rise, normal row empty: the mod drops the events. Then (needs an app that
-  attaches a display surface, such as the terminal CLI or the desktop app): install
-  it, ask Claude for a multi-step task, and watch the row for the to-do item in
-  progress and its count; then ask for a task that starts a subagent, and watch
-  the "running" count, its tokens, and "done" when it ends. If the row never
-  appears, `/cache` prints "display surfaces"; none attached means the app draws
-  no mod UI at all.
+- Help Desk 0.1.1 (partly done 2026-11-22, desktop app: debug row drew; after a
+  three-task list and an Explore subagent the owner reported counters rising and a
+  "done" line, so the app calls the hooks). Still to check: whether the subagent
+  line shows a token count; whether "running" shows before "done" (a subagent
+  shorter than the 1.5s poll may never show); and a `TaskUpdate` for a task made
+  before the mod loaded (known gap: ignored). If the row ever stops drawing,
+  `/cache` prints "display surfaces"; none attached means the app draws no mod UI.
 
 ## Projects (the list; keep it current)
 
