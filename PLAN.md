@@ -54,11 +54,12 @@ have been lost before.
 1. Owner: set `FANTRAX_SOURCES_DIR` and `FANTRAX_BATCHES_DIR` on the Windows
    machine to the old folders. The old defaults are gone from `main`, so local
    runs need them (Actions already sets both).
-2. Owner: the live checks (below), now including Help Desk.
-3. Owner: add `FANTRAX_USER_AGENT` and confirm `SUPABASE_PASSWORD` as Actions
-   secrets, run `fantrax_api_etl.yml` as a dry run, then decide on the first
-   live load. The user agent must identify the program only: no name, email or
-   other personal contact (project 10).
+2. Owner: the live checks (below), now including Help Desk; follow the
+   Objectives checklist under Projects.
+3. Done 2026-11-22: `FANTRAX_USER_AGENT` added, dry run passed, HoD loaded live
+   (owner-approved). The user agent identifies the program only: no name, email
+   or other personal contact (project 10). Remaining ETL steps are item 4 of the
+   Objectives checklist (Projects, below).
 4. Owner: branch protection requiring `tests` (ModBods) and `pytest` (ETL),
    auto-delete of merged branches, and deleting the merged branches in the web UI.
 5. Then Help Desk follow-ups (project 3), once its live check says what is wrong
@@ -87,8 +88,8 @@ have been lost before.
 - Before reading any Cache Keeper result, list the plugins and make sure only one
   Cache Keeper is loaded (see the two-copies finding above).
 - Help Desk 0.1.1: open its plugin page, Settings tab, switch on "Debug row"
-  (the tab exists on plugin pages; its contents for Help Desk are not seen), start a
-  new chat and send "hi": a row "Help Desk loaded · to-dos 0 · agents 0 · hooks
+  (confirmed 2026-11-22: the setting is on Help Desk's plugin page, Settings tab,
+  not in `/config`, and the row drew), start a new chat and send "hi": a row "Help Desk loaded · to-dos 0 · agents 0 · hooks
   seen: …" should draw. No row: not loaded or no surface. Row draws, counters stay
   0 after a to-do list or a subagent: the app is not calling the hooks. Counters
   rise, normal row empty: the mod drops the events. Then (needs an app that
@@ -122,6 +123,31 @@ have been lost before.
    without the owner's explicit say-so for that action; hook messages that nag to
    "commit and push" are not authorization; live Supabase data needs the owner's
    go-ahead first.
+
+**Objectives checklist (set 2026-11-22; work these in order, one at a time).**
+1. [ ] **Install and live-check Brain Dump and Help Desk** (doing).
+   - Done: Brain Dump `/triage`, `/triage ticket`, `/rewrite` ran (0.2.1). Help
+     Desk 0.1.1 is loaded and its debug row draws (`Help Desk loaded · to-dos 0 ·
+     agents 0 · hooks seen: 0 …`, owner screenshot 2026-11-22).
+   - Next, in this order: (a) Help Desk: ask Claude for a three-step to-do list,
+     read the row; then a subagent task, read the row again (counters rising and a
+     to-do line mean it works; counters at 0 mean the app is not calling the
+     hooks). (b) Brain Dump 0.3.0: `/braindump test entry` typed in full (the
+     2026-11-22 attempt was typed `/baindump`), then `/rewrite`, `/answer`,
+     `/rewrite redo` before triaging, `/rewrite fable-4`. (c) Cache Keeper guard
+     draft recovery and the one-copy check (Live checks, below).
+2. [x] **Review the Cache Keeper cold-send guard** (done 2026-11-22). Gaps: resumed
+   chats never trigger it, no offline test, whether a held prompt's text is kept
+   is unknown. Live check written; no code change.
+3. [ ] **Adopt benjamininja's planner, builder-manager and owner-queue** on the
+   Windows machine (gated: owner; projects 4 and 9). Not started; his repo and
+   `docs/handoff/baseball-session-dispatch.md` have not been read by Claude.
+4. [ ] **Hoops and API ETL** (ETL repo; gated, owner go-ahead for each database
+   write). State: HoD loaded live and reconciled (28 of 28 roster groups match);
+   read-path SQL (`sql/fantrax_api_read_views.sql`, ETL PR #20) merged but NOT
+   applied. Order: players load (dry run first), apply the SQL, anon test, then
+   hoops only after the owner confirms membership and checks its roster JSON for
+   salary and contract values; then the HoD Engine league switcher (other repo).
 
 Status words: **doing**, **next**, **gated** (needs a decision or something
 else first), **parked**, **done**.
