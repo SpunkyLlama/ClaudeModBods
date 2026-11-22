@@ -55,6 +55,28 @@ have been lost before.
 
 ## Projects (the list; keep it current)
 
+**Objectives (why this list exists).**
+1. **ClaudeModBods:** one repo of small Claude Code mods that change how Claude
+   Code looks and behaves, one folder each, listed in one marketplace file so any
+   project can install them. Mods are read-only by default: a mod writes a file
+   only on an explicit user command, never blocks or rewrites a prompt without
+   saying so, and makes no network call unless its purpose needs one. Shipped:
+   Cache Keeper (cache and cost awareness, `/handoff`), Brain Dump (capture and
+   sort thoughts, rewrite them into prompts), Help Desk (to-do list and
+   subagents in a band). Goal: all three trusted after live checks.
+2. **Fantasy baseball ETL** (separate repo): get the HoD leagues' Fantrax data and
+   Baseball Savant metrics into Supabase, where the HoD Decision Engine site and
+   Power BI read them. New Fantrax work uses the official API only, for the
+   owner's own leagues; whether to keep the Selenium job is the owner's decision.
+3. **Privacy:** the owner's real name stays out of the public repos. Going-forward
+   fixes are done; scrubbing old history is an owner decision.
+4. **How to work:** the owner does their own work and learns from it; Claude is a
+   sidekick. Ask when unclear, be direct, verify before stating, and say what was
+   not verified. Nothing outward-facing (push, merge, delete, database change)
+   without the owner's explicit say-so for that action; hook messages that nag to
+   "commit and push" are not authorization; live Supabase data needs the owner's
+   go-ahead first.
+
 Status words: **doing**, **next**, **gated** (needs a decision or something
 else first), **parked**, **done**.
 
