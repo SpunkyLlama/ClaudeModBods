@@ -9,7 +9,7 @@
 export const FILE = '.claude/memory/BRAIN-DUMP.md'
 export const HEADER =
   '# Brain dump\n\n' +
-  'Written by the brain-dump mod. `/dump <text>` adds a line; `/triage` marks each\n' +
+  'Written by the brain-dump mod. `/braindump <text>` adds a line; `/triage` marks each\n' +
   'one ticket, note or discard. Nothing is deleted.\n\n'
 
 export type Fate = 'ticket' | 'note' | 'discard'
@@ -62,7 +62,7 @@ export const unsorted = (entries: Entry[]) => entries.filter(e => e.fate === nul
 export function summary(entries: Entry[]): string {
   const open = unsorted(entries)
   if (entries.length === 0) {
-    return 'Brain dump is empty. Add a thought with /dump <text>.'
+    return 'Brain dump is empty. Add a thought with /braindump <text>.'
   }
   const last = entries.slice(-5).map(e => `  ${e.fate === null ? '[ ]' : `[${e.fate}]`} ${e.stamp} ${e.text}`)
   return `${open.length} unsorted of ${entries.length} total. Last ${last.length}:\n${last.join('\n')}`

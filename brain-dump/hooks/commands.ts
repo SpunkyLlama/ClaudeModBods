@@ -4,14 +4,16 @@
 // Why this exists: `$.command.register` declares a command for one session, and
 // the mod used to call it only from `session.start`. A session that loads the mod
 // after that event (a resumed chat, plugins synced late, a surface attaching
-// afterwards) then never got /dump, /triage, /answer or /rewrite, although the
+// afterwards) then never got /braindump, /triage, /answer or /rewrite, although the
 // band still drew. Registering again is harmless (the engine replaces a name), so
 // the mod now tries from several early events and stops once every command is in.
 
 export type CommandSpec = { name: string; description: string }
 
 export const COMMANDS: readonly CommandSpec[] = [
-  { name: 'dump', description: 'Save a thought to the brain dump, or list the last five' },
+  // Not `dump`: the engine refuses a mod's command that a user skill already holds, and a
+  // claude.ai skill named dump is common (found 2026-11-22, renamed in 0.3.0).
+  { name: 'braindump', description: 'Save a thought to the brain dump, or list the last five' },
   { name: 'triage', description: 'Sort the next unsorted brain-dump entry: ticket, note or discard' },
   { name: 'answer', description: 'Answer the open questions of the oldest rewritten entry; /rewrite redo then uses them' },
   { name: 'rewrite', description: 'Rewrite the oldest unsorted entry into a prompt for a Claude model, saved under it (uses Haiku)' },

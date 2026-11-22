@@ -44,7 +44,7 @@ async function main() {
     const s = newState()
     const f = fake()
     const failed = await ensureCommands(s, f.register)
-    check('registers all four', f.calls, ['dump', 'triage', 'answer', 'rewrite'])
+    check('registers all four', f.calls, ['braindump', 'triage', 'answer', 'rewrite'])
     check('nothing failed', failed, [])
     check('state is complete', isComplete(s), true)
     check('a second call registers nothing more', (await ensureCommands(s, f.register), f.calls.length), 4)
@@ -53,7 +53,7 @@ async function main() {
     const s = newState()
     const f = fake(['triage'])
     const failed = await ensureCommands(s, f.register)
-    check('one refusal does not stop the others', f.calls, ['dump', 'triage', 'answer', 'rewrite'])
+    check('one refusal does not stop the others', f.calls, ['braindump', 'triage', 'answer', 'rewrite'])
     check('the refusal is reported with its reason', failed, [{ name: 'triage', reason: 'refused triage' }])
     check('state is not complete', isComplete(s), false)
     f.refuse.length = 0
@@ -79,7 +79,8 @@ async function main() {
   }
 
   console.log('command list')
-  check('the four commands, in order', COMMANDS.map((c: { name: string }) => c.name), ['dump', 'triage', 'answer', 'rewrite'])
+  check('the four commands, in order', COMMANDS.map((c: { name: string }) => c.name), ['braindump', 'triage', 'answer', 'rewrite'])
+  check('no command uses a name another skill is known to hold (dump)', COMMANDS.some((c: { name: string }) => c.name === 'dump'), false)
   check('every command has a description', COMMANDS.every((c: { description: string }) => c.description.length > 10), true)
 
   console.log('wiring in register.tsx (the real hooks cannot run here, so check the source)')
@@ -90,6 +91,7 @@ async function main() {
       const body = at < 0 ? '' : src.slice(at, at + 220)
       check(`${ev} hook calls warmUp`, body.includes('warmUp($, reg, synced)'), true)
     }
+    check('the old /dump handler is gone from register.tsx', src.includes("{ command: 'dump' }"), false)
     check('register.tsx registers only through the helper (one $.command.register call)', (src.match(/\$\.command\.register/g) ?? []).length, 1)
     check('the prompt.submit hook fails open', /on\('prompt\.submit'[\s\S]*?\.catch\(\(\$, e, next\) => next\(e\)\)/.test(src), true)
     // the declared commands must each have a handler

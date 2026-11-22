@@ -82,7 +82,7 @@ export const register: Register = (on, options) => {
     return next(e)
   }).catch(($, e, next) => next(e))
 
-  on('command.run', { command: 'dump' }, async ($, e) => {
+  on('command.run', { command: 'braindump' }, async ($, e) => {
     const { path, text } = await load($)
     const line = formatEntry(e.args, await $.clock.now())
     if (line === null) {
