@@ -6,11 +6,12 @@ items collapse to one-liners once their durable signal lands in `MEMORY.md` or
 overwritten by every `/handoff`, and lists kept only in chat or in that file
 have been lost before.
 
-## Working state (2026-11-21)
-- ModBods `main`: Cache Keeper 1.2.0 and Brain Dump 0.2.0 (PRs #5, #6, #8; docs
-  PRs #7 and #9). Offline tests and `claude plugin validate --strict` pass; CI
-  was green on each PR. Neither mod has been tried in a live chat, and Brain
-  Dump's Haiku call (`/rewrite`) has never run. `/cache` in a real session did
+## Working state (2026-11-22)
+- ModBods `main`: Cache Keeper 1.2.0, Brain Dump 0.2.0 and Help Desk 0.1.0 (PRs
+  #5, #6, #8, #12; docs PRs #7, #9, #11). Offline tests and `claude plugin
+  validate --strict` pass for all three; CI was green on each PR. None has been
+  tried in a live chat, Brain Dump's Haiku call (`/rewrite`) has never run, and
+  Help Desk's band has never drawn. `/cache` in a real session did
   show the cache lifetime learned as 1h from three warm replies (`www`).
 - ETL `main`: the Fantrax official-API client, loader and RLS draft merged
   (PRs #15, #16, #17; reviewed 2026-11-21, see project 6). Tests: 71 passed
@@ -24,15 +25,15 @@ have been lost before.
 1. Owner: set `FANTRAX_SOURCES_DIR` and `FANTRAX_BATCHES_DIR` on the Windows
    machine to the old folders. The old defaults are gone from `main`, so local
    runs need them (Actions already sets both).
-2. Owner: the live checks (below).
+2. Owner: the live checks (below), now including Help Desk.
 3. Owner: add `FANTRAX_USER_AGENT` and confirm `SUPABASE_PASSWORD` as Actions
    secrets, run `fantrax_api_etl.yml` as a dry run, then decide on the first
    live load. The user agent must identify the program only: no name, email or
    other personal contact (project 10).
 4. Owner: branch protection requiring `tests` (ModBods) and `pytest` (ETL),
    auto-delete of merged branches, and deleting the merged branches in the web UI.
-5. Then Help Desk 0.1.0 (project 3): its gating questions are answered (see the
-   findings there); it needs the owner's go-ahead and a choice on dollars.
+5. Then Help Desk follow-ups (project 3), once its live check says what is wrong
+   or missing: flashing, the side pane, per-card dollars.
 
 ## Live checks (owner; Claude cannot run these)
 - Cache Keeper `/handoff`: run it here and confirm the `## Projects` section of
@@ -45,6 +46,12 @@ have been lost before.
   on the entry (still works, block kept).
 - Cache lifetime: send a message, wait more than 5.5 minutes, send another, run
   `/cache`, read the learned evidence.
+- Help Desk 0.1.0 (terminal CLI; a cloud session cannot draw the band): install
+  it, ask Claude for a multi-step task, and watch the row for the to-do item in
+  progress and its count; then ask for a task that starts a subagent, and watch
+  the "running" count, its tokens, and "done" when it ends. If the row never
+  appears, `/cache` prints "display surfaces"; none attached means the app draws
+  no mod UI at all.
 
 ## Projects (the list; keep it current)
 
@@ -74,7 +81,17 @@ else first), **parked**, **done**.
    Anthropic's prompting pages for Fable 5.2, Opus 5.5, Sonnet 5.5 and Haiku 5.5
    only; refresh them as models change. Not covered: Opus 5 and 4.8, Sonnet 5,
    Fable 5 and 5.1 (refused by name).
-3. **Help Desk mod** (next, feasible; waiting on the owner's go-ahead).
+3. **Help Desk mod** (done, 0.1.0, PR #12 merged; live check pending).
+   Built 2026-11-22 from the findings below with option 1 for dollars (tokens
+   processed per subagent, no per-card dollars; Cache Keeper still shows the
+   session total). A read-only band above the prompt: the to-do list (both tool
+   families, main chat only) and the running subagents with tokens. Start from
+   `agent.spawn`, tokens from `turn.step` (it reads subagent turns), the end by
+   polling `$.agent.list()` every 1.5s with a 15s grace for an agent never
+   listed. Observer hooks fail open. 43 offline tests. Not in 0.1.0: flashing
+   in-progress items and the side pane of cards. Unverified: the band has never
+   drawn (a cloud session attaches no surface); `TaskCreate`'s result carrying
+   `task.id` as the types say; how fast the poll catches a short-lived subagent.
    Modeled on the "Helper Desk" in Stephen Smith's article (October 2026):
    Claude's to-do list above the prompt with in-progress items flashing, plus a
    side pane with a live card per subagent showing what it is doing, its tokens
@@ -116,8 +133,8 @@ else first), **parked**, **done**.
    - Smallest first version: a read-only band above the prompt with the to-do
      list (in-progress item highlighted) and the count of running subagents
      with their tokens. The side pane of cards comes later.
-   Open: the owner's go-ahead to build 0.1.0, and the option 1 or option 2
-   choice on dollars.
+   Open after 0.1.0: the live check, then flashing, the side pane, and whether
+   per-card dollars are worth a price table kept inside Help Desk alone.
 4. **Project Planner and Manager** (gated, owner decision). Adopt
    benjamininja's planner / builder-manager / owner-queue setup on the owner's
    Windows machine (his handoff doc: `docs/handoff/baseball-session-dispatch.md`).
@@ -213,6 +230,8 @@ else first), **parked**, **done**.
 - [ ] A `docs/` folder and ADRs, once decisions need alternatives written down.
 
 ## Shipped
+- 2026-11-22: Help Desk 0.1.0, PR #12: to-do list and subagent tokens in a band,
+  43 offline tests.
 - 2026-11-21: name privacy, going-forward fixes: ModBods PR #10 (author, owner
   and licence fields use the public handle) and ETL PR #18 (no hardcoded user
   paths, env vars, guard test).
