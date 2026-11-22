@@ -32,7 +32,7 @@ new summary under 400 words, so never keep a list there. It is gitignored.
 |---|---|---|
 | Cache Keeper | `cache-keeper/` | Shipped, version 1.2.0 |
 | Brain Dump | `brain-dump/` | Shipped, version 0.2.0 (live check pending) |
-| Help Desk | not started | Planned (task list and subagent monitor with tokens and cost) |
+| Help Desk | `help-desk/` | Shipped, version 0.1.0 (live check pending) |
 
 ## Working style
 
@@ -92,10 +92,12 @@ runner cannot run it.
 
 ## Known mess
 
-- Merged remote branches need deleting in the web UI. As of 2026-11-21, all
-  merged through PRs #2 to #10: `chore/housekeeping`, `chore/neutral-author-fields`,
-  `docs/plan-update`, `docs/plan-after-brain-dump`, `docs/brain-dump-0-2-0`,
-  `mod/brain-dump/feat-initial`, `mod/brain-dump/feat-rewrite`, and under
+- Merged remote branches need deleting in the web UI. As of 2026-11-22, all
+  merged through PRs #2 to #12 (plus this docs PR once it merges):
+  `chore/housekeeping`, `chore/neutral-author-fields`, `docs/plan-update`,
+  `docs/plan-after-brain-dump`, `docs/brain-dump-0-2-0`, `docs/name-privacy-status`,
+  `docs/help-desk-findings`, `mod/brain-dump/feat-initial`,
+  `mod/brain-dump/feat-rewrite`, `mod/help-desk/feat-initial`, and under
   `mod/cache-keeper/`:
   `feat-pinned-list`, `feat-resume-state`, `feat-ttl-autodetect`,
   `fix-handoff-fork-evidence`, `fix-ignore-subagents`.

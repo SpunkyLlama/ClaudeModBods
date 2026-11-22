@@ -45,6 +45,22 @@
 - `hooks/guides.ts` holds hand-distilled prompt-writing notes (2026-11-16). They
   keep only what changes the text of a prompt, not API or harness settings.
 
+## Engine facts for display mods (found 2026-11-21 in the type file, build 2.1.325)
+
+- To-do list: `tool.call` for `TodoWrite` (input is the whole new list) and for
+  `TaskCreate` / `TaskUpdate` (incremental; `TaskCreate`'s result holds
+  `task.id`). Both tool sets exist; which one a chat uses depends on the app.
+  `tool.call` carries `agentId` (absent on the main loop).
+- Subagent start: `agent.spawn`; `await next(e)` resolves to `{ model, agentId }`.
+  Subagent tokens: `turn.step` with `agentId`, and `usage` on `next(e)`'s result.
+  Subagent finish: no plugin event; poll `$.agent.list()` (`status`, entries are
+  dropped seconds after ending). Subagents a mod starts itself step past plugin
+  hooks.
+- Cache Keeper has no price table. Its dollars are `$.session.usage().cost.usd`,
+  the engine's session total. The engine gives no per-subagent cost.
+- A cloud session attaches no display surface (`/cache` says "none attached"), so
+  a band or pane cannot draw there. Test the display in the terminal CLI.
+
 ## Decisions
 
 - 2026-11-15: all mods live in this one repo, a marketplace with one folder per

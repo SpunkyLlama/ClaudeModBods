@@ -6,11 +6,12 @@ items collapse to one-liners once their durable signal lands in `MEMORY.md` or
 overwritten by every `/handoff`, and lists kept only in chat or in that file
 have been lost before.
 
-## Working state (2026-11-21)
-- ModBods `main`: Cache Keeper 1.2.0 and Brain Dump 0.2.0 (PRs #5, #6, #8; docs
-  PRs #7 and #9). Offline tests and `claude plugin validate --strict` pass; CI
-  was green on each PR. Neither mod has been tried in a live chat, and Brain
-  Dump's Haiku call (`/rewrite`) has never run. `/cache` in a real session did
+## Working state (2026-11-22)
+- ModBods `main`: Cache Keeper 1.2.0, Brain Dump 0.2.0 and Help Desk 0.1.0 (PRs
+  #5, #6, #8, #12; docs PRs #7, #9, #11). Offline tests and `claude plugin
+  validate --strict` pass for all three; CI was green on each PR. None has been
+  tried in a live chat, Brain Dump's Haiku call (`/rewrite`) has never run, and
+  Help Desk's band has never drawn. `/cache` in a real session did
   show the cache lifetime learned as 1h from three warm replies (`www`).
 - ETL `main`: the Fantrax official-API client, loader and RLS draft merged
   (PRs #15, #16, #17; reviewed 2026-11-21, see project 6). Tests: 71 passed
@@ -24,14 +25,15 @@ have been lost before.
 1. Owner: set `FANTRAX_SOURCES_DIR` and `FANTRAX_BATCHES_DIR` on the Windows
    machine to the old folders. The old defaults are gone from `main`, so local
    runs need them (Actions already sets both).
-2. Owner: the live checks (below).
+2. Owner: the live checks (below), now including Help Desk.
 3. Owner: add `FANTRAX_USER_AGENT` and confirm `SUPABASE_PASSWORD` as Actions
    secrets, run `fantrax_api_etl.yml` as a dry run, then decide on the first
    live load. The user agent must identify the program only: no name, email or
    other personal contact (project 10).
 4. Owner: branch protection requiring `tests` (ModBods) and `pytest` (ETL),
    auto-delete of merged branches, and deleting the merged branches in the web UI.
-5. Then Help Desk (project 3), once its gating questions are answered.
+5. Then Help Desk follow-ups (project 3), once its live check says what is wrong
+   or missing: flashing, the side pane, per-card dollars.
 
 ## Live checks (owner; Claude cannot run these)
 - Cache Keeper `/handoff`: run it here and confirm the `## Projects` section of
@@ -44,8 +46,36 @@ have been lost before.
   on the entry (still works, block kept).
 - Cache lifetime: send a message, wait more than 5.5 minutes, send another, run
   `/cache`, read the learned evidence.
+- Help Desk 0.1.0 (terminal CLI; a cloud session cannot draw the band): install
+  it, ask Claude for a multi-step task, and watch the row for the to-do item in
+  progress and its count; then ask for a task that starts a subagent, and watch
+  the "running" count, its tokens, and "done" when it ends. If the row never
+  appears, `/cache` prints "display surfaces"; none attached means the app draws
+  no mod UI at all.
 
 ## Projects (the list; keep it current)
+
+**Objectives (why this list exists).**
+1. **ClaudeModBods:** one repo of small Claude Code mods that change how Claude
+   Code looks and behaves, one folder each, listed in one marketplace file so any
+   project can install them. Mods are read-only by default: a mod writes a file
+   only on an explicit user command, never blocks or rewrites a prompt without
+   saying so, and makes no network call unless its purpose needs one. Shipped:
+   Cache Keeper (cache and cost awareness, `/handoff`), Brain Dump (capture and
+   sort thoughts, rewrite them into prompts), Help Desk (to-do list and
+   subagents in a band). Goal: all three trusted after live checks.
+2. **Fantasy baseball ETL** (separate repo): get the HoD leagues' Fantrax data and
+   Baseball Savant metrics into Supabase, where the HoD Decision Engine site and
+   Power BI read them. New Fantrax work uses the official API only, for the
+   owner's own leagues; whether to keep the Selenium job is the owner's decision.
+3. **Privacy:** the owner's real name stays out of the public repos. Going-forward
+   fixes are done; scrubbing old history is an owner decision.
+4. **How to work:** the owner does their own work and learns from it; Claude is a
+   sidekick. Ask when unclear, be direct, verify before stating, and say what was
+   not verified. Nothing outward-facing (push, merge, delete, database change)
+   without the owner's explicit say-so for that action; hook messages that nag to
+   "commit and push" are not authorization; live Supabase data needs the owner's
+   go-ahead first.
 
 Status words: **doing**, **next**, **gated** (needs a decision or something
 else first), **parked**, **done**.
@@ -73,14 +103,60 @@ else first), **parked**, **done**.
    Anthropic's prompting pages for Fable 5.2, Opus 5.5, Sonnet 5.5 and Haiku 5.5
    only; refresh them as models change. Not covered: Opus 5 and 4.8, Sonnet 5,
    Fable 5 and 5.1 (refused by name).
-3. **Help Desk mod** (gated). Modeled on the "Helper Desk" in Stephen Smith's
-   article (October 2026): Claude's to-do list above the prompt with in-progress
-   items flashing, plus a side pane with a live card per subagent showing what
-   it is doing, its tokens and its cost. Build our own; do not copy the Ben AI
-   pack. Gated on: which events expose the to-do list and the subagent
-   start and finish (check the `plugin-authoring` skill), and how to share
-   Cache Keeper's price table across mods (they cannot import each other).
-   Read-only: it displays, it never blocks or rewrites.
+3. **Help Desk mod** (done, 0.1.0, PR #12 merged; live check pending).
+   Built 2026-11-22 from the findings below with option 1 for dollars (tokens
+   processed per subagent, no per-card dollars; Cache Keeper still shows the
+   session total). A read-only band above the prompt: the to-do list (both tool
+   families, main chat only) and the running subagents with tokens. Start from
+   `agent.spawn`, tokens from `turn.step` (it reads subagent turns), the end by
+   polling `$.agent.list()` every 1.5s with a 15s grace for an agent never
+   listed. Observer hooks fail open. 43 offline tests. Not in 0.1.0: flashing
+   in-progress items and the side pane of cards. Unverified: the band has never
+   drawn (a cloud session attaches no surface); `TaskCreate`'s result carrying
+   `task.id` as the types say; how fast the poll catches a short-lived subagent.
+   Modeled on the "Helper Desk" in Stephen Smith's article (October 2026):
+   Claude's to-do list above the prompt with in-progress items flashing, plus a
+   side pane with a live card per subagent showing what it is doing, its tokens
+   and its cost. Build our own; do not copy the Ben AI pack. Read-only: it
+   displays, it never blocks or rewrites.
+   Findings 2026-11-21, from the engine's type file for build 2.1.325 and
+   Cache Keeper's source (no code written, nothing run):
+   - To-do list: `tool.call` for `TodoWrite` (todos with pending, in_progress or
+     completed, plus `activeForm`) and for `TaskCreate` / `TaskUpdate` (the
+     newer incremental tools; status also `deleted`, with blocking links). This
+     build has both, and which one a chat uses depends on the app, so the mod
+     must handle both. `tool.call` carries `agentId`, so a subagent's list is
+     told apart from the main one. Not read: the result shapes of `Task*`.
+   - Subagent start: `agent.spawn` (description, subagentType, model,
+     background, parentAgentId); `next(e)` unchanged resolves to `{ model,
+     agentId }`.
+   - Subagent tokens: `turn.step` carries `agentId` on a subagent's loop, and
+     awaiting `next(e)` gives `usage` (four token counts and the model id) per
+     request. Cache Keeper already filters these out with `e.agentId`.
+   - Subagent finish: no plugin event found. `$.agent.list()` gives each agent's
+     `status` (running, idle, completed, failed, killed) and drops entries
+     seconds after they end, so the mod must poll (`$.clock.every`).
+     `turn.complete` carries `agentId` but CLAUDE.md says it never fires in
+     cloud sessions (not tested here). Classic SubagentStop is a settings hook;
+     whether a plugin can subscribe to it is unchecked.
+   - Blind spot: subagents a mod starts itself with `$.agent.spawn` step past
+     plugin hooks. Subagents the model starts with the Agent tool are visible.
+   - The old gating question about sharing "Cache Keeper's price table" rested
+     on a wrong premise: Cache Keeper has no price table. It reads the session
+     total from `$.session.usage().cost.usd`. The engine gives no per-subagent
+     cost, so either show tokens per card plus the engine's session dollars
+     (recommended for 0.1.0: no table to maintain, nothing that can be wrong
+     about prices), or keep a small price table inside Help Desk alone to
+     estimate dollars per card. No cross-mod sharing is needed either way.
+   - Testing limit: `/cache` in a cloud session reported "display surfaces:
+     none attached", so a band or pane cannot draw there. Logic can be tested
+     offline; the display needs an app that attaches a surface (the terminal
+     CLI), so it adds to the owner's live checks.
+   - Smallest first version: a read-only band above the prompt with the to-do
+     list (in-progress item highlighted) and the count of running subagents
+     with their tokens. The side pane of cards comes later.
+   Open after 0.1.0: the live check, then flashing, the side pane, and whether
+   per-card dollars are worth a price table kept inside Help Desk alone.
 4. **Project Planner and Manager** (gated, owner decision). Adopt
    benjamininja's planner / builder-manager / owner-queue setup on the owner's
    Windows machine (his handoff doc: `docs/handoff/baseball-session-dispatch.md`).
@@ -176,6 +252,8 @@ else first), **parked**, **done**.
 - [ ] A `docs/` folder and ADRs, once decisions need alternatives written down.
 
 ## Shipped
+- 2026-11-22: Help Desk 0.1.0, PR #12: to-do list and subagent tokens in a band,
+  43 offline tests.
 - 2026-11-21: name privacy, going-forward fixes: ModBods PR #10 (author, owner
   and licence fields use the public handle) and ETL PR #18 (no hardcoded user
   paths, env vars, guard test).
