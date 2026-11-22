@@ -8,7 +8,7 @@ changes how Claude Code looks and behaves, for any project.
 | Mod | What it does | Status |
 | --- | --- | --- |
 | [Cache Keeper](cache-keeper/README.md) | Warm/cold prompt-cache status, tokens and cost, a nudge to start a new chat, and `/handoff`. | Shipped, version 1.2.0 |
-| [Brain Dump](brain-dump/README.md) | `/dump` a thought into a file without leaving the chat; `/triage` sorts the pile one entry at a time; `/rewrite` turns an entry into a prompt for a Claude model (written by Haiku), and `/answer` feeds its open questions back for a better second pass. | Shipped, version 0.2.1 (not yet checked in a live chat) |
+| [Brain Dump](brain-dump/README.md) | `/braindump` a thought into a file without leaving the chat; `/triage` sorts the pile one entry at a time; `/rewrite` turns an entry into a prompt for a Claude model (written by Haiku), and `/answer` feeds its open questions back for a better second pass. | Shipped, version 0.3.0 (not yet checked in a live chat) |
 | [Help Desk](help-desk/README.md) | A band above the prompt with Claude's to-do list and the subagents running, with tokens per subagent. Read-only. | Shipped, version 0.1.0 (not yet checked in a live chat) |
 
 ## Install a mod

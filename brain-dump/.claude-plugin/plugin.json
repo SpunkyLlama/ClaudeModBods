@@ -1,7 +1,7 @@
 {
   "name": "brain-dump",
-  "version": "0.2.1",
-  "description": "/dump a thought into a file; /triage sorts the pile; /rewrite turns an entry into a prompt for a Claude model, and /answer feeds its open questions back for a better second pass.",
+  "version": "0.3.0",
+  "description": "/braindump a thought into a file; /triage sorts the pile; /rewrite turns an entry into a prompt for a Claude model, and /answer feeds its open questions back for a better second pass.",
   "types": "./types/index.d.ts",
   "license": "MIT",
   "author": {
