@@ -13,7 +13,7 @@ have been lost before.
   Live so far (owner, desktop app, 2026-11-22): Brain Dump `/triage`, `/triage ticket`
   and `/rewrite` (Haiku wrote a prompt) ran; `/answer`, `/rewrite redo` on a fresh
   entry and `/rewrite fable-4` are not checked; 0.3.0 (`/braindump`) is not yet
-  checked. Help Desk's band has never been seen. `/cache` showed the cache lifetime
+  checked. Help Desk hooks fire in the desktop app (2026-11-22, see below). `/cache` showed the cache lifetime
   learned as 1h from warm replies (`www`).
 - First live findings (2026-11-22, desktop app, cloud sessions):
   - A cloud session in the desktop app does attach a display surface (`/cache`
@@ -128,11 +128,19 @@ have been lost before.
 1. [ ] **Install and live-check Brain Dump and Help Desk** (doing).
    - Done: Brain Dump `/triage`, `/triage ticket`, `/rewrite` ran (0.2.1). Help
      Desk 0.1.1 is loaded and its debug row draws (`Help Desk loaded · to-dos 0 ·
-     agents 0 · hooks seen: 0 …`, owner screenshot 2026-11-22).
-   - Next, in this order: (a) Help Desk: ask Claude for a three-step to-do list,
-     read the row; then a subagent task, read the row again (counters rising and a
-     to-do line mean it works; counters at 0 mean the app is not calling the
-     hooks). (b) Brain Dump 0.3.0: `/braindump test entry` typed in full (the
+     agents 0 · hooks seen: 0 …`, owner screenshot 2026-11-22). Help Desk
+     to-do and subagent check done 2026-11-22 (desktop app): Claude made three
+     tasks (one completed, one in progress, one pending) and ran an Explore
+     subagent; the owner reported counters rising and a "done" line, so the app
+     does call the hooks. Not verified: whether the subagent line showed a token
+     count, whether "running" showed before "done", and whether the 1.5s poll
+     catches a very short subagent. The owner's screenshot showed a "Tasks" panel
+     that may be the app's built-in list, not Help Desk's band; the counters
+     and "done" line are the owner's reading, not in the image. Offline: 62 tests
+     pass, validator passes, and two deliberate breaks (token formatter,
+     `agent.spawn` counter) each made tests fail.
+   - Next, in this order: (a) Help Desk: the two unverified details above, then
+     the `TaskUpdate`-for-an-earlier-task gap if wanted. (b) Brain Dump 0.3.0: `/braindump test entry` typed in full (the
      2026-11-22 attempt was typed `/baindump`), then `/rewrite`, `/answer`,
      `/rewrite redo` before triaging, `/rewrite fable-4`. (c) Cache Keeper guard
      draft recovery and the one-copy check (Live checks, below).
@@ -176,7 +184,7 @@ else first), **parked**, **done**.
    Anthropic's prompting pages for Fable 5.2, Opus 5.5, Sonnet 5.5 and Haiku 5.5
    only; refresh them as models change. Not covered: Opus 5 and 4.8, Sonnet 5,
    Fable 5 and 5.1 (refused by name).
-3. **Help Desk mod** (done, 0.1.1, PRs #12 and #16 merged; live check pending, band never seen).
+3. **Help Desk mod** (done, 0.1.1, PRs #12 and #16 merged; live check partly done: hooks fire, band details unverified).
    0.1.1 added an optional debug row (setting `debug`, off by default) that always
    draws and counts task tool calls, subagent spawns and subagent steps seen, to tell
    "not loaded" from "hooks never fire" from "events dropped". Known gap: a
