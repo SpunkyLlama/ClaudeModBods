@@ -16,6 +16,20 @@ A Claude Code mod that shows what Claude is working on, in one row above the pro
 
 "Tokens" is tokens processed: everything a subagent's requests read, wrote or generated, cache reads included. It is a size measure, not a bill, because a cache read costs a fraction of an output token. There is no dollar figure per subagent: the engine reports only a session total, which Cache Keeper shows.
 
+## Debug row (0.1.1)
+
+If the band stays blank, turn on the **Debug row** setting. The row then always draws, even with nothing to show:
+
+```
+Help Desk loaded · to-dos 0 · agents 0 · hooks seen: 0 task calls, 0 spawns, 0 subagent steps
+```
+
+- No row at all: the mod is not loaded in this chat, or the app attaches no display surface (`/cache` lists the surfaces).
+- The row draws but "hooks seen" stays at 0 after Claude uses a to-do list or starts a subagent: the app is not calling the mod's hooks.
+- The counters rise but the normal row stays empty: the mod sees the events and something later in its logic drops them.
+
+The counters count only what happens after the mod loads, so a chat that already has a to-do list shows it only once Claude changes the list.
+
 ## Limits in 0.1.0
 
 - Draws only where the app attaches a display surface: `/cache` lists the "display surfaces" it sees. The terminal CLI has one, and so did a cloud session in the desktop app (seen 2026-11-22: `desktop`). Where none is attached, nothing shows. This band has not yet been seen drawing.

@@ -17,7 +17,12 @@ export type Card = {
   seen: boolean // $.agent.list() has listed it at least once
 }
 
-export type Desk = { todos: Todo[]; cards: Card[] }
+// How often each hook has fired since the chat began (for the debug row only): a task tool call
+// seen, a subagent spawn seen, a subagent model request seen. Lets a live check tell "the hook
+// never fires" from "it fires but nothing draws".
+export type Seen = { calls: number; spawns: number; steps: number }
+
+export type Desk = { todos: Todo[]; cards: Card[]; seen: Seen }
 
 // What claude-code's Shaped<Desk> is, written out: an atom created with { shape }
 // needs its key declared this way, and the validator rejects a types file that
