@@ -92,15 +92,18 @@ runner cannot run it.
 
 ## Known mess
 
-- Merged remote branches need deleting in the web UI. As of 2026-11-22, all
-  merged through PRs #2 to #12 (plus this docs PR once it merges):
+- Merged remote branches need deleting in the web UI. As of 2026-11-22, all 22
+  remote branches other than `main` are merged into `main` (checked by git
+  ancestry against `main` at `68d210a`, through PR #20):
   `chore/housekeeping`, `chore/neutral-author-fields`, `docs/plan-update`,
-  `docs/plan-after-brain-dump`, `docs/brain-dump-0-2-0`, `docs/name-privacy-status`,
-  `docs/help-desk-findings`, `mod/brain-dump/feat-initial`,
-  `mod/brain-dump/feat-rewrite`, `mod/help-desk/feat-initial`, and under
-  `mod/cache-keeper/`:
-  `feat-pinned-list`, `feat-resume-state`, `feat-ttl-autodetect`,
-  `fix-handoff-fork-evidence`, `fix-ignore-subagents`.
+  `docs/plan-after-brain-dump`, `docs/brain-dump-0-2-0`, `docs/brain-dump-0-2-1`,
+  `docs/brain-dump-0-3-0`, `docs/name-privacy-status`, `docs/help-desk-findings`,
+  `docs/help-desk-live-result`, `docs/objectives-checklist`,
+  `mod/brain-dump/feat-initial`, `mod/brain-dump/feat-rename-dump`,
+  `mod/brain-dump/feat-rewrite`, `mod/brain-dump/fix-late-register`,
+  `mod/help-desk/feat-diagnostics`, `mod/help-desk/feat-initial`, and under
+  `mod/cache-keeper/`: `feat-pinned-list`, `feat-resume-state`,
+  `feat-ttl-autodetect`, `fix-handoff-fork-evidence`, `fix-ignore-subagents`.
 - No branch protection and no auto-delete of merged branches yet. Settings,
   General, "Automatically delete head branches".
 - The live check that the cache lifetime is learned after a pause over 5.5
