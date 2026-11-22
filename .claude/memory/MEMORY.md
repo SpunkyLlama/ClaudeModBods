@@ -1,7 +1,7 @@
 # Memory Index: ClaudeModBods (project)
 
 > Project-local memory. Cross-project preferences live in root `~/.claude/`.
-> Last consolidated: 2026-11-22 (Brain Dump 0.2.1, display-surface and command-registration findings added).
+> Last consolidated: 2026-11-22 (Brain Dump 0.3.0, Help Desk 0.1.1, command-name findings added).
 
 ## Active Files
 
@@ -42,11 +42,15 @@
 - Imports between hook files need a `.ts` extension for the Node test runner, so
   `rewrite.ts` imports `./guides.ts` behind a `// @ts-ignore`. `register.tsx`
   imports without extensions.
+- `$.command.register` refuses a built-in's name and a name a user skill already
+  holds (the rejection reads "refused: it is the user's /<skill>"). Register each
+  command separately and report the reason, as `hooks/commands.ts` does.
 - Commands belong to a session (`$.command.register` declares `/<name>` for this
   session, listed in the typeahead). 0.2.0 registered only in `session.start`; a
   session that loads the mod later got the band but no commands. 0.2.1 registers
   from `session.start`, `session.attach` and `prompt.submit` (`hooks/commands.ts`,
   engine-free so tests can fake `$.command`). Registering a name again replaces it.
+  After 0.2.1 `/triage` and `/rewrite` ran in sessions where they had been missing.
 - The validator rejects `$.command` used as a value: spell `$.command.register(...)`
   at its call site (`c => $.command.register(c)` is fine). It also type-compiles
   `tests/*.ts`, so a type error in a test fails `--strict`.
@@ -84,10 +88,11 @@
 - Types must be self-contained: the validator rejects `import`.
 - The nudge and `/handoff` say "start a new chat" first, since `/clear` is not
   in every app.
-- 2026-11-22: Brain Dump 0.2.1 (see above). A claude.ai skill named `dump` exists
-  in the owner's account and shows in the picker as `anthropic-skills:dump`; the
-  mod's `/dump` is a different thing. Rename the mod's command if the two keep
-  getting confused (not done).
+- 2026-11-22: Brain Dump 0.3.0: `/dump` is now `/braindump`. A claude.ai skill named
+  `dump` exists in the owner's account (`anthropic-skills:dump`), and the engine
+  refuses `$.command.register` for a name a user skill holds; the 0.2.1 toast said
+  "refused: it is the user's /anthropic-skills:dump". `triage`, `answer` and
+  `rewrite` registered fine. Check a new command name against the owner's skills.
 - Nothing is pushed or merged without the owner's explicit say-so. Stop-hook
   "push" nags are not authorization.
 - CI runs the offline tests and the validator. `tsc` stays local (see above).

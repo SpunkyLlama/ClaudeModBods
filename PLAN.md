@@ -7,24 +7,37 @@ overwritten by every `/handoff`, and lists kept only in chat or in that file
 have been lost before.
 
 ## Working state (2026-11-22)
-- ModBods `main`: Cache Keeper 1.2.0, Brain Dump 0.2.1 and Help Desk 0.1.0 (PRs
-  #5, #6, #8, #12 and the 0.2.1 fix; docs PRs #7, #9, #11). Offline tests and `claude plugin
-  validate --strict` pass for all three; CI was green on each PR. None has been
-  tried in a live chat, Brain Dump's Haiku call (`/rewrite`) has never run, and
-  Help Desk's band has never been seen. `/cache` in a real session did
-  show the cache lifetime learned as 1h from three warm replies (`www`).
+- ModBods `main`: Cache Keeper 1.2.0, Brain Dump 0.3.0 and Help Desk 0.1.1 (PRs
+  #5, #6, #8, #12, #14, #16, #17; docs PRs #7, #9, #11, #13, #15). Offline tests and
+  `claude plugin validate --strict` pass for all three; CI was green on each PR.
+  Live so far (owner, desktop app, 2026-11-22): Brain Dump `/triage`, `/triage ticket`
+  and `/rewrite` (Haiku wrote a prompt) ran; `/answer`, `/rewrite redo` on a fresh
+  entry and `/rewrite fable-4` are not checked; 0.3.0 (`/braindump`) is not yet
+  checked. Help Desk's band has never been seen. `/cache` showed the cache lifetime
+  learned as 1h from warm replies (`www`).
 - First live findings (2026-11-22, desktop app, cloud sessions):
   - A cloud session in the desktop app does attach a display surface (`/cache`
     printed `display surfaces: desktop`) and Brain Dump's band drew. The earlier
     "cloud sessions cannot draw" notes were wrong for that app.
-  - In two sessions the band drew but `/triage`, `/answer` and `/rewrite` (and
-    `/dump` in the picker; the only `/dump` listed was a claude.ai skill of the
-    same name) were "not a command here". Commands are registered per session,
-    and 0.2.0 registered them only in `session.start`. 0.2.1 registers from
-    `session.start`, `session.attach` and `prompt.submit` until all four are in,
-    and toasts the reason if one is refused. The cause is a hypothesis, not
-    confirmed: whether 0.2.1 fixes it is a live check. `/cache` did run in the
-    same sessions, so Cache Keeper's commands registered.
+  - In two sessions the band drew but `/triage`, `/answer` and `/rewrite` were "not
+    a command here". Commands are registered per session, and 0.2.0 registered
+    them only in `session.start`. 0.2.1 registers from `session.start`,
+    `session.attach` and `prompt.submit` until all four are in, one at a time, and
+    toasts the reason if one is refused. After 0.2.1 `/triage` and `/rewrite` ran,
+    so it helped; whether late loading was the whole cause is not proven.
+    `/cache` ran in the same sessions, so Cache Keeper's commands registered.
+  - `/dump` had a different cause, shown by 0.2.1's toast: "could not register
+    /dump (refused: it is the user's /anthropic-skills:dump)". The engine refuses a
+    mod command whose name a user skill holds (a claude.ai skill named `dump`
+    exists), so `/dump` ran the skill. 0.3.0 renames the command to `/braindump`
+    (PR #17, merged); the live check is pending.
+  - Help Desk 0.1.1 installed (its plugin page shows 0.1.1, "Added") but no row
+    was seen in a new chat, and it is not listed in `/config`. The page has no
+    enabled/disabled indicator, and whether `/config` lists any plugin's settings
+    was not checked (Cache Keeper's and Brain Dump's were not looked for). An
+    offline run of its own functions on the events a TaskCreate, TaskUpdate and
+    subagent spawn raise produced rows, so the problem is not in that logic; it is
+    in loading, hook wiring or drawing. 0.1.1 adds a debug row to find out which.
   - The build container held two Cache Keepers at once (an inline dev copy,
     1.1.0, and the marketplace copy, 1.2.0). The cold status line said "then
     /clear", wording only 1.1.0 has, and read "resumed, Σ 0" while `/cache`
@@ -54,12 +67,15 @@ have been lost before.
 ## Live checks (owner; Claude cannot run these)
 - Cache Keeper `/handoff`: run it here and confirm the `## Projects` section of
   `PLAN.md` lands at the bottom of `HANDOFF.md`.
-- Brain Dump 0.1.0: `/dump test`, `/dump`, `/triage`, `/triage discard`; confirm
-  the band shows the count and `.claude/memory/BRAIN-DUMP.md` looks right.
-- Brain Dump 0.2.0: `/dump the login page breaks`, `/rewrite` (check the block
-  under the entry), `/answer only on mobile Safari`, `/rewrite redo` (the answer
-  is used and kept), `/rewrite fable-4` (refused by name), then `/triage ticket`
-  on the entry (still works, block kept).
+- Brain Dump 0.3.0 (the command is `/braindump`, not `/dump`; start a new chat after
+  updating). Done on 0.2.1: `/triage`, `/triage ticket`, `/rewrite`. Still to do:
+  `/braindump test` (no "could not register" toast); `/braindump <a new entry>`,
+  `/rewrite` (check the block under the entry), `/answer only on mobile Safari`,
+  `/rewrite redo` (run it before triaging: it only takes unsorted entries, so after
+  `/triage` it says "Nothing to rewrite"), `/rewrite fable-4` (refused by name),
+  then `/triage ticket` on the entry (block kept). Note: an entry phrased like an
+  instruction to Claude is read by Haiku as the task (seen 2026-11-22); that is
+  the entry's wording, not a bug.
 - Cache lifetime: send a message, wait more than 5.5 minutes, send another, run
   `/cache`, read the learned evidence.
 - Cache Keeper cold-send guard (reviewed 2026-11-22): after a pause longer than
@@ -70,8 +86,13 @@ have been lost before.
   offline test covers it.
 - Before reading any Cache Keeper result, list the plugins and make sure only one
   Cache Keeper is loaded (see the two-copies finding above).
-- Help Desk 0.1.0 (needs an app that attaches a display surface, such as the
-  terminal CLI or the desktop app): install
+- Help Desk 0.1.1: open its plugin page, Settings tab, switch on "Debug row"
+  (the tab exists on plugin pages; its contents for Help Desk are not seen), start a
+  new chat and send "hi": a row "Help Desk loaded · to-dos 0 · agents 0 · hooks
+  seen: …" should draw. No row: not loaded or no surface. Row draws, counters stay
+  0 after a to-do list or a subagent: the app is not calling the hooks. Counters
+  rise, normal row empty: the mod drops the events. Then (needs an app that
+  attaches a display surface, such as the terminal CLI or the desktop app): install
   it, ask Claude for a multi-step task, and watch the row for the to-do item in
   progress and its count; then ask for a task that starts a subagent, and watch
   the "running" count, its tokens, and "done" when it ends. If the row never
@@ -111,9 +132,10 @@ else first), **parked**, **done**.
    auto-delete of merged branches, and deleting `chore/housekeeping` and the
    four merged `mod/cache-keeper/*` branches in the web UI. (The full list of
    merged branches is under Known mess in `CLAUDE.md`.)
-2. **Brain Dump mod** (done, 0.2.1, PRs #6 and #8 merged plus the 0.2.1 fix; live check pending).
-   `/dump <text>` appends a timestamped line to `.claude/memory/BRAIN-DUMP.md`.
-   `/dump` alone shows the count and last five. `/triage` marks the oldest
+2. **Brain Dump mod** (done, 0.3.0, PRs #6, #8, #14, #17 merged; live check partly done).
+   `/braindump <text>` (renamed from `/dump` in 0.3.0, because a user skill named
+   `dump` blocks the name) appends a timestamped line to
+   `.claude/memory/BRAIN-DUMP.md`. `/braindump` alone shows the count and last five. `/triage` marks the oldest
    unsorted entry ticket, note or discard and never deletes. A band shows the
    unsorted count. Differences from the first idea: `ticket` and `note` only
    mark the entry and tell the owner to ask Claude, which confirms before filing
@@ -128,7 +150,11 @@ else first), **parked**, **done**.
    Anthropic's prompting pages for Fable 5.2, Opus 5.5, Sonnet 5.5 and Haiku 5.5
    only; refresh them as models change. Not covered: Opus 5 and 4.8, Sonnet 5,
    Fable 5 and 5.1 (refused by name).
-3. **Help Desk mod** (done, 0.1.0, PR #12 merged; live check pending).
+3. **Help Desk mod** (done, 0.1.1, PRs #12 and #16 merged; live check pending, band never seen).
+   0.1.1 added an optional debug row (setting `debug`, off by default) that always
+   draws and counts task tool calls, subagent spawns and subagent steps seen, to tell
+   "not loaded" from "hooks never fire" from "events dropped". Known gap: a
+   `TaskUpdate` for a task created before the mod loaded is ignored.
    Built 2026-11-22 from the findings below with option 1 for dollars (tokens
    processed per subagent, no per-card dollars; Cache Keeper still shows the
    session total). A read-only band above the prompt: the to-do list (both tool
@@ -279,6 +305,10 @@ else first), **parked**, **done**.
 - [ ] A `docs/` folder and ADRs, once decisions need alternatives written down.
 
 ## Shipped
+- 2026-11-22: Brain Dump 0.3.0, PR #17: `/dump` renamed `/braindump` (the engine
+  refuses a name a user skill holds); tests changed first and failed on the old name.
+- 2026-11-22: Help Desk 0.1.1, PR #16: optional debug row with hook counters; 19 new
+  offline tests (62 in all).
 - 2026-11-22: Brain Dump 0.2.1: commands register from `session.start`,
   `session.attach` and `prompt.submit` until all four are in, one at a time, with a
   toast naming any that is refused; 24 new offline tests (94 in all for the mod).
