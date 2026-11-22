@@ -3,6 +3,8 @@ import type { Register } from 'claude-code'
 
 import { FATES, FILE, HEADER, addAnswer, answersIn, blockLines, fateAdvice, formatEntry, insertBlock, isAskingOf, mark, parse, stampOf, summary, triagePrompt, unsorted } from './dump'
 import type { Fate } from './dump'
+import { ensureCommands, failureNote, isComplete, newState } from './commands'
+import type { RegState } from './commands'
 import { MODELS } from './guides'
 import { MAX_ALL, blockText, buildRequest, formatOne, parseArgs, parseReply, resolveTarget, unknownTarget } from './rewrite'
 import type { ModelKey } from './guides'
@@ -19,6 +21,27 @@ async function load($: any) {
 
 async function refresh($: any, text: string) {
   await update($, count, () => unsorted(parse(text)).length)
+}
+
+// Registers any missing commands and, the first time, reads the file for the band's count.
+// Top-level, because the validator follows `$` only into these. It never throws: the hooks
+// that call it must not break a session over a missing command.
+async function warmUp($: any, state: RegState, synced: { done: boolean }) {
+  try {
+    if (!isComplete(state)) {
+      const failed = await ensureCommands(state, c => $.command.register(c))
+      const note = failureNote(state, failed)
+      if (note !== null) {
+        $.ui.toast(note)
+      }
+    }
+    if (!synced.done) {
+      synced.done = true
+      await refresh($, (await load($)).text)
+    }
+  } catch {
+    // fail open
+  }
 }
 
 // One Haiku call: the sub-agent that rewrites a note. No tools and no chat history,
@@ -39,14 +62,25 @@ async function rewriteOne($: any, text: string, key: ModelKey, answers: string[]
 export const register: Register = (on, options) => {
   const defaultTarget = typeof options.targetModel === 'string' && options.targetModel.trim() !== '' ? options.targetModel.trim() : 'opus'
 
+  // Commands belong to a session, and a session can load this mod after session.start has
+  // fired, so register from several early events until every command is in (commands.ts).
+  const reg = newState()
+  const synced = { done: false }
+
   on('session.start', async ($, e, next) => {
-    await $.command.register({ name: 'dump', description: 'Save a thought to the brain dump, or list the last five' })
-    await $.command.register({ name: 'triage', description: 'Sort the next unsorted brain-dump entry: ticket, note or discard' })
-    await $.command.register({ name: 'answer', description: 'Answer the open questions of the oldest rewritten entry; /rewrite redo then uses them' })
-    await $.command.register({ name: 'rewrite', description: 'Rewrite the oldest unsorted entry into a prompt for a Claude model, saved under it (uses Haiku)' })
-    await refresh($, (await load($)).text)
+    await warmUp($, reg, synced)
     return next(e)
   })
+
+  on('session.attach', async ($, e, next) => {
+    await warmUp($, reg, synced)
+    return next(e)
+  })
+
+  on('prompt.submit', async ($, e, next) => {
+    await warmUp($, reg, synced)
+    return next(e)
+  }).catch(($, e, next) => next(e))
 
   on('command.run', { command: 'dump' }, async ($, e) => {
     const { path, text } = await load($)
