@@ -18,7 +18,7 @@ A Claude Code mod that shows what Claude is working on, in one row above the pro
 
 ## Limits in 0.1.0
 
-- Draws only where the app shows mod UI (the terminal CLI). A cloud session attaches no display surface, so nothing shows there.
+- Draws only where the app attaches a display surface: `/cache` lists the "display surfaces" it sees. The terminal CLI has one, and so did a cloud session in the desktop app (seen 2026-11-22: `desktop`). Where none is attached, nothing shows. This band has not yet been seen drawing.
 - Finished subagents are noticed by checking the agent list every 1.5 seconds, because the engine has no "subagent finished" event for plugins. A subagent that starts and ends between two checks, before it is ever listed, is marked done after 15 seconds.
 - In-progress items are marked, not flashing, and there is no side pane of subagent cards yet.
 - Subagents started by another plugin through `$.agent.spawn` are not seen (the engine skips plugin hooks for them).

@@ -7,12 +7,28 @@ overwritten by every `/handoff`, and lists kept only in chat or in that file
 have been lost before.
 
 ## Working state (2026-11-22)
-- ModBods `main`: Cache Keeper 1.2.0, Brain Dump 0.2.0 and Help Desk 0.1.0 (PRs
-  #5, #6, #8, #12; docs PRs #7, #9, #11). Offline tests and `claude plugin
+- ModBods `main`: Cache Keeper 1.2.0, Brain Dump 0.2.1 and Help Desk 0.1.0 (PRs
+  #5, #6, #8, #12 and the 0.2.1 fix; docs PRs #7, #9, #11). Offline tests and `claude plugin
   validate --strict` pass for all three; CI was green on each PR. None has been
   tried in a live chat, Brain Dump's Haiku call (`/rewrite`) has never run, and
-  Help Desk's band has never drawn. `/cache` in a real session did
+  Help Desk's band has never been seen. `/cache` in a real session did
   show the cache lifetime learned as 1h from three warm replies (`www`).
+- First live findings (2026-11-22, desktop app, cloud sessions):
+  - A cloud session in the desktop app does attach a display surface (`/cache`
+    printed `display surfaces: desktop`) and Brain Dump's band drew. The earlier
+    "cloud sessions cannot draw" notes were wrong for that app.
+  - In two sessions the band drew but `/triage`, `/answer` and `/rewrite` (and
+    `/dump` in the picker; the only `/dump` listed was a claude.ai skill of the
+    same name) were "not a command here". Commands are registered per session,
+    and 0.2.0 registered them only in `session.start`. 0.2.1 registers from
+    `session.start`, `session.attach` and `prompt.submit` until all four are in,
+    and toasts the reason if one is refused. The cause is a hypothesis, not
+    confirmed: whether 0.2.1 fixes it is a live check. `/cache` did run in the
+    same sessions, so Cache Keeper's commands registered.
+  - The build container held two Cache Keepers at once (an inline dev copy,
+    1.1.0, and the marketplace copy, 1.2.0). The cold status line said "then
+    /clear", wording only 1.1.0 has, and read "resumed, Σ 0" while `/cache`
+    said warm with 7 turns. Likely two copies with separate state; not proven.
 - ETL `main`: the Fantrax official-API client, loader and RLS draft merged
   (PRs #15, #16, #17; reviewed 2026-11-21, see project 6). Tests: 71 passed
   before the privacy PR, 73 after it.
@@ -46,7 +62,16 @@ have been lost before.
   on the entry (still works, block kept).
 - Cache lifetime: send a message, wait more than 5.5 minutes, send another, run
   `/cache`, read the learned evidence.
-- Help Desk 0.1.0 (terminal CLI; a cloud session cannot draw the band): install
+- Cache Keeper cold-send guard (reviewed 2026-11-22): after a pause longer than
+  the learned lifetime, with context at or above `coldGuardMinPercent`, send a
+  multi-line prompt. It should be held once with a note. Record whether the text
+  stays in the prompt box, comes back with Up-arrow, or is lost (the engine docs
+  do not say). Known gaps: a resumed chat never triggers the guard, and no
+  offline test covers it.
+- Before reading any Cache Keeper result, list the plugins and make sure only one
+  Cache Keeper is loaded (see the two-copies finding above).
+- Help Desk 0.1.0 (needs an app that attaches a display surface, such as the
+  terminal CLI or the desktop app): install
   it, ask Claude for a multi-step task, and watch the row for the to-do item in
   progress and its count; then ask for a task that starts a subagent, and watch
   the "running" count, its tokens, and "done" when it ends. If the row never
@@ -86,7 +111,7 @@ else first), **parked**, **done**.
    auto-delete of merged branches, and deleting `chore/housekeeping` and the
    four merged `mod/cache-keeper/*` branches in the web UI. (The full list of
    merged branches is under Known mess in `CLAUDE.md`.)
-2. **Brain Dump mod** (done, 0.2.0, PRs #6 and #8 merged; live check pending).
+2. **Brain Dump mod** (done, 0.2.1, PRs #6 and #8 merged plus the 0.2.1 fix; live check pending).
    `/dump <text>` appends a timestamped line to `.claude/memory/BRAIN-DUMP.md`.
    `/dump` alone shows the count and last five. `/triage` marks the oldest
    unsorted entry ticket, note or discard and never deletes. A band shows the
@@ -112,7 +137,8 @@ else first), **parked**, **done**.
    polling `$.agent.list()` every 1.5s with a 15s grace for an agent never
    listed. Observer hooks fail open. 43 offline tests. Not in 0.1.0: flashing
    in-progress items and the side pane of cards. Unverified: the band has never
-   drawn (a cloud session attaches no surface); `TaskCreate`'s result carrying
+   seen drawing (the desktop app does attach a surface, so this can now be
+   checked there); `TaskCreate`'s result carrying
    `task.id` as the types say; how fast the poll catches a short-lived subagent.
    Modeled on the "Helper Desk" in Stephen Smith's article (October 2026):
    Claude's to-do list above the prompt with in-progress items flashing, plus a
@@ -148,10 +174,11 @@ else first), **parked**, **done**.
      (recommended for 0.1.0: no table to maintain, nothing that can be wrong
      about prices), or keep a small price table inside Help Desk alone to
      estimate dollars per card. No cross-mod sharing is needed either way.
-   - Testing limit: `/cache` in a cloud session reported "display surfaces:
-     none attached", so a band or pane cannot draw there. Logic can be tested
-     offline; the display needs an app that attaches a surface (the terminal
-     CLI), so it adds to the owner's live checks.
+   - Testing limit: in the session that wrote this, `/cache` reported "display
+     surfaces: none attached", so a band or pane could not draw there. Corrected
+     2026-11-22: a cloud session in the desktop app does attach one (`desktop`).
+     Logic can be tested offline; the display needs an app that attaches a
+     surface, so it adds to the owner's live checks.
    - Smallest first version: a read-only band above the prompt with the to-do
      list (in-progress item highlighted) and the count of running subagents
      with their tokens. The side pane of cards comes later.
@@ -252,6 +279,9 @@ else first), **parked**, **done**.
 - [ ] A `docs/` folder and ADRs, once decisions need alternatives written down.
 
 ## Shipped
+- 2026-11-22: Brain Dump 0.2.1: commands register from `session.start`,
+  `session.attach` and `prompt.submit` until all four are in, one at a time, with a
+  toast naming any that is refused; 24 new offline tests (94 in all for the mod).
 - 2026-11-22: Help Desk 0.1.0, PR #12: to-do list and subagent tokens in a band,
   43 offline tests.
 - 2026-11-21: name privacy, going-forward fixes: ModBods PR #10 (author, owner

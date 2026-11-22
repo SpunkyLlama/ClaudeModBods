@@ -1,7 +1,7 @@
 # Memory Index: ClaudeModBods (project)
 
 > Project-local memory. Cross-project preferences live in root `~/.claude/`.
-> Last consolidated: 2026-11-15 (Brain Dump and Cache Keeper 1.2.0 added).
+> Last consolidated: 2026-11-22 (Brain Dump 0.2.1, display-surface and command-registration findings added).
 
 ## Active Files
 
@@ -42,6 +42,14 @@
 - Imports between hook files need a `.ts` extension for the Node test runner, so
   `rewrite.ts` imports `./guides.ts` behind a `// @ts-ignore`. `register.tsx`
   imports without extensions.
+- Commands belong to a session (`$.command.register` declares `/<name>` for this
+  session, listed in the typeahead). 0.2.0 registered only in `session.start`; a
+  session that loads the mod later got the band but no commands. 0.2.1 registers
+  from `session.start`, `session.attach` and `prompt.submit` (`hooks/commands.ts`,
+  engine-free so tests can fake `$.command`). Registering a name again replaces it.
+- The validator rejects `$.command` used as a value: spell `$.command.register(...)`
+  at its call site (`c => $.command.register(c)` is fine). It also type-compiles
+  `tests/*.ts`, so a type error in a test fails `--strict`.
 - `hooks/guides.ts` holds hand-distilled prompt-writing notes (2026-11-16). They
   keep only what changes the text of a prompt, not API or harness settings.
 
@@ -58,8 +66,10 @@
   hooks.
 - Cache Keeper has no price table. Its dollars are `$.session.usage().cost.usd`,
   the engine's session total. The engine gives no per-subagent cost.
-- A cloud session attaches no display surface (`/cache` says "none attached"), so
-  a band or pane cannot draw there. Test the display in the terminal CLI.
+- Whether a surface is attached depends on the app, not on cloud vs local:
+  `/cache` printed "none attached" in one cloud session and `desktop` in a cloud
+  session in the desktop app (2026-11-22), where Brain Dump's band drew. Always
+  read `/cache`'s "display surfaces" line before concluding a band cannot draw.
 
 ## Decisions
 
@@ -74,6 +84,10 @@
 - Types must be self-contained: the validator rejects `import`.
 - The nudge and `/handoff` say "start a new chat" first, since `/clear` is not
   in every app.
+- 2026-11-22: Brain Dump 0.2.1 (see above). A claude.ai skill named `dump` exists
+  in the owner's account and shows in the picker as `anthropic-skills:dump`; the
+  mod's `/dump` is a different thing. Rename the mod's command if the two keep
+  getting confused (not done).
 - Nothing is pushed or merged without the owner's explicit say-so. Stop-hook
   "push" nags are not authorization.
 - CI runs the offline tests and the validator. `tsc` stays local (see above).
