@@ -1,11 +1,11 @@
 import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
-import { EMPTY, addCard, addUsage, bandText, fromTodoWrite, syncStatuses, taskCreated, taskUpdated, tokensOf } from './desk'
+import { EMPTY, addCard, addUsage, bandText, bump, fromTodoWrite, syncStatuses, taskCreated, taskUpdated, tokensOf } from './desk'
 
 // All state lives in the session's state atom, not module variables: the app may
 // reload the module between turns. Change the tag if Desk changes.
-const desk = atom({ plugin: 'help-desk', key: 'desk' } as const, EMPTY, { shape: 'desk-1' })
+const desk = atom({ plugin: 'help-desk', key: 'desk' } as const, EMPTY, { shape: 'desk-2' })
 
 const POLL_MS = 1500
 
@@ -29,7 +29,9 @@ async function poll($: any) {
   })
 }
 
-export const register: Register = on => {
+export const register: Register = (on, options) => {
+  // The debug row (userConfig `debug`) is always drawn and says what the hooks have seen.
+  const isDebug = options.debug === true
   let timer: { cancel: () => void } | undefined
 
   on('session.start', async ($, e, next) => {
@@ -42,6 +44,7 @@ export const register: Register = on => {
 
   on('tool.call', { tool: 'TodoWrite' }, async ($, e, next) => {
     const r = await next(e)
+    await update($, desk, d => bump(d, 'calls'))
     if (e.agentId === undefined && r.deny === undefined && r.isError !== true) {
       const todos = fromTodoWrite((e as any).todos)
       await update($, desk, d => ({ ...d, todos }))
@@ -51,6 +54,7 @@ export const register: Register = on => {
 
   on('tool.call', { tool: 'TaskCreate' }, async ($, e, next) => {
     const r = await next(e)
+    await update($, desk, d => bump(d, 'calls'))
     if (e.agentId === undefined && r.deny === undefined && r.isError !== true) {
       const id = String((r.result as any)?.task?.id ?? '')
       await update($, desk, d => ({ ...d, todos: taskCreated(d.todos, id, String((e as any).subject ?? ''), (e as any).activeForm) }))
@@ -60,6 +64,7 @@ export const register: Register = on => {
 
   on('tool.call', { tool: 'TaskUpdate' }, async ($, e, next) => {
     const r = await next(e)
+    await update($, desk, d => bump(d, 'calls'))
     const ok = r.deny === undefined && r.isError !== true && (r.result as any)?.success !== false
     if (e.agentId === undefined && ok) {
       const a = e as any
@@ -77,6 +82,7 @@ export const register: Register = on => {
   // started itself would step past plugin hooks, but this mod starts none.
   on('agent.spawn', async ($, e, next) => {
     const r = await next(e)
+    await update($, desk, d => bump(d, 'spawns'))
     if (r.deny === undefined && r.agentId !== undefined) {
       const id = r.agentId
       const now = await $.clock.now()
@@ -95,7 +101,7 @@ export const register: Register = on => {
     if (e.agentId !== undefined && r.usage) {
       const id = e.agentId
       const tokens = tokensOf(r.usage)
-      await update($, desk, d => ({ ...d, cards: addUsage(d.cards, id, tokens) }))
+      await update($, desk, d => ({ ...bump(d, 'steps'), cards: addUsage(d.cards, id, tokens) }))
     }
     return r
   })
@@ -103,7 +109,7 @@ export const register: Register = on => {
   // ── The band ────────────────────────────────────────────────────────────────
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    const text = bandText(await read($, desk))
+    const text = bandText(await read($, desk), isDebug)
     if (e.props.hasSurvey || text === '') {
       return next(e)
     }

@@ -1,7 +1,7 @@
 // Pure helpers for Help Desk: no engine, no file access, so the tests run offline.
-import type { Card, Desk, Todo } from '../types'
+import type { Card, Desk, Seen, Todo } from '../types'
 
-export const EMPTY: Desk = { todos: [], cards: [] }
+export const EMPTY: Desk = { todos: [], cards: [], seen: { calls: 0, spawns: 0, steps: 0 } }
 export const MAX_CARDS = 8 // finished cards kept, newest last; running ones are never dropped
 export const GRACE_MS = 15_000 // a new card the agent list has not shown yet is not "ended"
 
@@ -175,7 +175,26 @@ export function agentsLine(cards: Card[]): string | null {
   return parts.join(' · ')
 }
 
-// The whole band row, or '' when there is nothing to show.
-export function bandText(d: Desk): string {
-  return [todoLine(d.todos), agentsLine(d.cards)].filter((x): x is string => x !== null).join('  │  ')
+// One more hook firing counted. Never throws on a state written before `seen` existed.
+export function bump(d: Desk, key: keyof Seen): Desk {
+  const s = seenOf(d)
+  return { ...d, seen: { ...s, [key]: s[key] + 1 } }
+}
+
+// The counters, with zeros for any missing from state written before they existed.
+function seenOf(d: { seen?: Partial<Seen> }): Seen {
+  return { calls: d.seen?.calls ?? 0, spawns: d.seen?.spawns ?? 0, steps: d.seen?.steps ?? 0 }
+}
+
+// The debug row: proof the mod is loaded and drawing, and what its hooks have seen.
+export function debugLine(d: Pick<Desk, 'todos' | 'cards'> & { seen?: Partial<Seen> }): string {
+  const s = seenOf(d)
+  return `Help Desk loaded · to-dos ${d.todos.length} · agents ${d.cards.length} · hooks seen: ${s.calls} task calls, ${s.spawns} spawns, ${s.steps} subagent steps`
+}
+
+// The whole band row, or '' when there is nothing to show. With `isDebug` the row is never
+// empty: it says the mod is loaded, then adds whatever there is to show.
+export function bandText(d: Pick<Desk, 'todos' | 'cards'> & { seen?: Partial<Seen> }, isDebug = false): string {
+  const main = [todoLine(d.todos), agentsLine(d.cards)].filter((x): x is string => x !== null).join('  │  ')
+  return isDebug ? [main, debugLine(d)].filter(x => x !== '').join('  │  ') : main
 }
