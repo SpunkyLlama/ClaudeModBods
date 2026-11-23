@@ -3,6 +3,7 @@ import type { EngineInterface, Register } from 'claude-code'
 
 import { learn, observe, tokensOf } from './lifetime'
 import { extractSection, withPinned } from './pinned'
+import { chatKey, excessKeys, restore } from './resume'
 import type { Snap } from '../types'
 
 const PANE = 'cache-keeper'
@@ -67,11 +68,11 @@ async function compute($: EngineInterface, cfg: Cfg) {
 
   let cache = '⚪ cache: no data yet'
   let isCold = false
-  // No reply seen by this mod yet, but the session already holds context and
-  // began well before now: it was resumed. The cache lifetime has very likely
-  // lapsed while it was away, so the first send re-caches the whole context.
-  // Heuristic: startedAt is the first launch, not the last reply, so a resume
-  // within the cache lifetime can still be warm; the wording says "probably".
+  // No reply seen by this mod yet, and no saved record of this chat's last reply
+  // (see resume.ts: a chat you return to normally gets its record back, so this
+  // is a chat the mod never saw reply), yet the session already holds context and
+  // began well before now. The time away is unknown, so the cache may or may not
+  // have lapsed; the wording says "probably".
   const isResumed =
     S.lastAt === 0 && tokens > 0 && u.startedAt > 0 && now - u.startedAt > cfg.resumeAwayMs
   if (isResumed) {
@@ -125,6 +126,42 @@ async function readPinned($: any, cwd: string, cfg: Cfg): Promise<string | null>
   }
 }
 
+// Save and restore this chat's cache record in the plugin's own store (resume.ts).
+// Top-level so the validator follows $. All three fail open: a store problem must
+// never break a session, and a missing record only means the "resumed" wording.
+async function saveChat($: any, s: Snap) {
+  try {
+    const { startedAt } = await $.session.usage()
+    if (typeof startedAt === 'number' && startedAt > 0) {
+      await $.store.set(chatKey(startedAt), s)
+    }
+  } catch {
+    // fail open
+  }
+}
+
+async function loadChat($: any): Promise<Snap | null> {
+  try {
+    const { startedAt } = await $.session.usage()
+    if (typeof startedAt !== 'number' || startedAt <= 0) {
+      return null
+    }
+    return restore(await $.store.get(chatKey(startedAt)), await $.clock.now())
+  } catch {
+    return null
+  }
+}
+
+async function pruneChats($: any) {
+  try {
+    for (const key of excessKeys((await $.store.keys()) as string[])) {
+      await $.store.delete(key)
+    }
+  } catch {
+    // fail open
+  }
+}
+
 export const register: Register = (on, options) => {
   const cfg: Cfg = {
     ttl: num(options.cacheTtlSeconds, 3600),
@@ -151,6 +188,16 @@ export const register: Register = (on, options) => {
       description: 'Summarize this chat into HANDOFF.md to paste into a new chat',
     })
     void $.ui.open({ id: PANE, title: 'Cache Keeper' })
+    // A chat you left and came back to starts with empty state: restore its own
+    // record, so the status shows real elapsed time. Skipped when state already
+    // holds a reply (a hot reload keeps state).
+    if ((await read($, snap)).lastAt === 0) {
+      const chat = await loadChat($)
+      if (chat) {
+        await update($, snap, s => (s.lastAt > 0 ? s : chat))
+      }
+    }
+    await pruneChats($)
     // The lifetime belongs to the account, not the chat: reuse what an earlier
     // session learned.
     const saved = (await $.store.get('ttl')) as { ttl?: number; evidence?: string } | undefined
@@ -204,6 +251,7 @@ export const register: Register = (on, options) => {
     if (isAfterFork) {
       await update($, forked, () => false)
     }
+    await saveChat($, await read($, snap))
     if (learned) {
       await $.store.set('ttl', { ttl: learned.ttl, evidence: learned.evidence })
     }
