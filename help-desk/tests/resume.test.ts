@@ -97,7 +97,7 @@ console.log('wiring in register.tsx')
   check('a subagent spawn saves the desk', body("on('agent.spawn'", 900).includes('await persist($)'), true)
   check('the poll saves when a card changed', body('async function poll', 1100).includes('await persist($)'), true)
   check('subagent steps are throttled, not saved every time', body("on('turn.step'", 900).includes('SAVE_EVERY_MS'), true)
-  check('both store helpers fail open', (src.match(/\/\/ fail open/g) ?? []).length, 2)
+  check('the two store helpers and the command helper fail open', (src.match(/\/\/ fail open/g) ?? []).length, 3)
   check('the desk is only ever written to the store through persist', (src.match(/\$\.store\.set/g) ?? []).length, 1)
 }
 

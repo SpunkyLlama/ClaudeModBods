@@ -61,7 +61,7 @@ console.log('wiring in register.tsx (the real hooks cannot run here, so check th
   }
   check('agent.spawn hook counts a spawn', body("on('agent.spawn'").includes("bump(d, 'spawns')"), true)
   check('a subagent step is counted', src.includes("bump(d, 'steps')"), true)
-  check('the band passes the flag on', src.includes('bandText(await read($, desk), isDebug)'), true)
+  check('the band passes the flag and the pane note on', src.includes('bandText(await read($, desk), isDebug, await read($, pane))'), true)
   check('the state tag was bumped with the new field', src.includes("{ shape: 'desk-2' }") && !src.includes("'desk-1'"), true)
   check('observer hooks still fail open', (src.match(/\.catch\(OPEN\)/g) ?? []).length >= 4, true)
 }

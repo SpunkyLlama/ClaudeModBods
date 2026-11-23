@@ -1,13 +1,18 @@
 import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
-import { EMPTY, addCard, addUsage, bandText, bump, fromTodoWrite, syncStatuses, taskCreated, taskUpdated, tokensOf } from './desk'
+import { EMPTY, addCard, addUsage, bandText, bump, ensureCommand, fromTodoWrite, paneLines, paneNote, syncStatuses, taskCreated, taskUpdated, tokensOf } from './desk'
+import type { CommandState } from './desk'
 import { chatKey, excessKeys, restoreDesk } from './resume'
 
 // All state lives in the session's state atom, not module variables: the app may
 // reload the module between turns. Change the tag if Desk changes.
 const desk = atom({ plugin: 'help-desk', key: 'desk' } as const, EMPTY, { shape: 'desk-2' })
 
+// Whether the pane drew the last time it was opened, for the debug row (see paneNote).
+const pane = atom({ plugin: 'help-desk', key: 'pane' } as const, '')
+
+const PANE = 'help-desk'
 const POLL_MS = 1500
 
 // These hooks only watch. If one fails, the call it watched goes through as if it
@@ -52,6 +57,19 @@ async function restoreChat($: any) {
   }
 }
 
+// Registers /helpdesk, once, and says so (one toast) if the engine refuses the name. Top-level so the
+// validator follows `$`; it never throws, so the hooks that call it cannot break a session.
+async function warmCommand($: any, state: CommandState) {
+  try {
+    const note = await ensureCommand(state, c => $.command.register(c))
+    if (note !== null) {
+      $.ui.toast(note)
+    }
+  } catch {
+    // fail open
+  }
+}
+
 // Top-level, because the validator follows `$` only into top-level functions.
 // $.agent.list() is how a finished subagent is noticed: the engine has no event
 // for it, and drops the entry seconds after the agent ends.
@@ -81,12 +99,54 @@ export const register: Register = (on, options) => {
   const isDebug = options.debug === true
   let timer: { cancel: () => void } | undefined
   let lastSavedAt = 0
+  // Commands belong to a session, and a session can load this mod after session.start has fired,
+  // so /helpdesk is registered from several early events until it is in (desk.ts, ensureCommand).
+  const cmd: CommandState = { isDone: false, isWarned: false }
 
   on('session.start', async ($, e, next) => {
+    await warmCommand($, cmd)
     await restoreChat($)
     timer?.cancel()
     timer = $.clock.every(POLL_MS, () => void poll($))
     return next(e)
+  })
+
+  on('session.attach', async ($, e, next) => {
+    await warmCommand($, cmd)
+    return next(e)
+  }).catch(OPEN)
+
+  on('prompt.submit', async ($, e, next) => {
+    await warmCommand($, cmd)
+    return next(e)
+  }).catch(OPEN)
+
+  // ── The pane: opened only by the person's /helpdesk, never on its own ───────
+
+  on('command.run', { command: 'helpdesk' }, async $ => {
+    const opened = await $.ui.open({ id: PANE, title: 'Help Desk' })
+    await update($, pane, () => paneNote(opened))
+    return {
+      text: opened.isPlaced ? 'Help Desk pane opened.' : `Help Desk pane not drawn: ${opened.reason ?? 'no reason given'}.`,
+    }
+  })
+
+  // The same desk the band reads, so a change redraws both. `placement` "widget" is the desktop
+  // app's small form of a minimized pane: it gets the band's summary, which reads at a glance.
+  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
+    const { Box, Text } = $.ui.resolve(e)
+    const d = await read($, desk)
+    const rows = (e.viewport?.rows ?? 24) - 4
+    const lines = paneLines(d, rows, { cols: e.props.bodyColumns, isGlance: e.props.placement === 'widget' })
+    return (
+      <Box flexDirection="column">
+        {lines.map(l => (
+          <Text bold={l.tone === 'bold'} dimColor={l.tone === 'dim'} color={l.tone === 'warn' ? 'warning' : undefined}>
+            {l.text}
+          </Text>
+        ))}
+      </Box>
+    )
   })
 
   // ── To-do list (main loop only; a subagent's own list is not shown) ─────────
@@ -167,7 +227,7 @@ export const register: Register = (on, options) => {
   // ── The band ────────────────────────────────────────────────────────────────
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
-    const text = bandText(await read($, desk), isDebug)
+    const text = bandText(await read($, desk), isDebug, await read($, pane))
     if (e.props.hasSurvey || text === '') {
       return next(e)
     }

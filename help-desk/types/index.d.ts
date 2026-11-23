@@ -31,6 +31,6 @@ export type DeskShaped = { shape: string; value: Desk }
 
 declare module 'claude-code' {
   interface PluginState {
-    'help-desk': { desk: DeskShaped }
+    'help-desk': { desk: DeskShaped; pane: string }
   }
 }
