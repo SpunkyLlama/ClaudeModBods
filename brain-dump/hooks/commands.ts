@@ -55,6 +55,36 @@ export async function ensureCommands(
   return failed
 }
 
+// What `warm` needs from the engine, as plain functions so the tests can fake them.
+export type WarmOps = {
+  register: Registrar
+  toast: (text: string) => void
+  refreshCount: () => Promise<void> // re-reads the file and sets the band's count
+}
+
+// Called from the early events and from every prompt. Registers any missing command, then
+// re-reads the file for the band's count EVERY time: the count used to be read once per
+// chat, so another chat in the same folder (or a hand edit) left the band stale. The two
+// steps fail separately and never throw, so a registration problem cannot freeze the count
+// and the hooks that call this cannot break a session.
+export async function warm(state: RegState, ops: WarmOps): Promise<void> {
+  try {
+    if (!isComplete(state)) {
+      const note = failureNote(state, await ensureCommands(state, ops.register))
+      if (note !== null) {
+        ops.toast(note)
+      }
+    }
+  } catch {
+    // fail open
+  }
+  try {
+    await ops.refreshCount()
+  } catch {
+    // fail open
+  }
+}
+
 // One line for a toast, or null when there is nothing to say or it was already said.
 export function failureNote(state: RegState, failed: readonly Failure[]): string | null {
   if (failed.length === 0 || state.warned) {
