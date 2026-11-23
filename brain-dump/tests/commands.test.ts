@@ -4,7 +4,7 @@
 // Prints one line per scenario and exits non-zero if any fails.
 
 // @ts-ignore
-import { COMMANDS, ensureCommands, failureNote, isComplete, newState } from '../hooks/commands.ts'
+import { COMMANDS, ensureCommands, failureNote, isComplete, newState, warm } from '../hooks/commands.ts'
 // @ts-ignore
 import { readFileSync } from 'node:fs'
 
@@ -78,6 +78,64 @@ async function main() {
     check('says nothing when nothing failed', failureNote(newState(), []), null)
   }
 
+  // The band's count must follow the file: another chat in the same folder, or a hand
+  // edit, changes it, and the old code read it once per chat and then went stale.
+  console.log('warm: registers commands and keeps the band count current')
+  {
+    const s = newState()
+    const f = fake()
+    const toasts: string[] = []
+    let counted = 0
+    const ops = { register: f.register, toast: (t: string) => { toasts.push(t) }, refreshCount: async () => { counted++ } }
+    await warm(s, ops)
+    check('first call registers all four and refreshes the count', [f.calls.length, counted], [4, 1])
+    await warm(s, ops)
+    await warm(s, ops)
+    check('later calls register nothing more', f.calls.length, 4)
+    check('but refresh the count every time', counted, 3)
+    check('no toast when nothing failed', toasts, [])
+  }
+  {
+    const s = newState()
+    const f = fake(['triage'])
+    const toasts: string[] = []
+    let counted = 0
+    await warm(s, { register: f.register, toast: (t: string) => { toasts.push(t) }, refreshCount: async () => { counted++ } })
+    check('a refused command is toasted', toasts, ['Brain Dump: could not register /triage (refused triage).'])
+    check('and the count is still refreshed', counted, 1)
+    await warm(s, { register: f.register, toast: (t: string) => { toasts.push(t) }, refreshCount: async () => { counted++ } })
+    check('the refusal is toasted only once', toasts.length, 1)
+  }
+  {
+    const s = newState()
+    const f = fake()
+    const failing = async () => { throw new Error('file unreadable') }
+    let threw = false
+    try {
+      await warm(s, { register: f.register, toast: () => {}, refreshCount: failing })
+    } catch {
+      threw = true
+    }
+    check('a count failure never throws out of warm (fails open)', threw, false)
+    check('and the commands were still registered', f.calls.length, 4)
+  }
+  {
+    const s = newState()
+    let counted = 0
+    let threw = false
+    try {
+      await warm(s, {
+        register: async () => { throw new Error('x') },
+        toast: () => { throw new Error('toast broke') },
+        refreshCount: async () => { counted++ },
+      })
+    } catch {
+      threw = true
+    }
+    check('a toast failure never throws out of warm either', threw, false)
+    check('and the count is still refreshed after it', counted, 1)
+  }
+
   console.log('command list')
   check('the four commands, in order', COMMANDS.map((c: { name: string }) => c.name), ['braindump', 'triage', 'answer', 'rewrite'])
   check('no command uses a name another skill is known to hold (dump)', COMMANDS.some((c: { name: string }) => c.name === 'dump'), false)
@@ -89,8 +147,9 @@ async function main() {
     for (const ev of ['session.start', 'session.attach', 'prompt.submit']) {
       const at = src.indexOf(`on('${ev}'`)
       const body = at < 0 ? '' : src.slice(at, at + 220)
-      check(`${ev} hook calls warmUp`, body.includes('warmUp($, reg, synced)'), true)
+      check(`${ev} hook calls warmUp`, body.includes('warmUp($, reg)'), true)
     }
+    check('no once-only "synced" flag is left that would freeze the band count', src.includes('synced'), false)
     check('the old /dump handler is gone from register.tsx', src.includes("{ command: 'dump' }"), false)
     check('register.tsx registers only through the helper (one $.command.register call)', (src.match(/\$\.command\.register/g) ?? []).length, 1)
     check('the prompt.submit hook fails open', /on\('prompt\.submit'[\s\S]*?\.catch\(\(\$, e, next\) => next\(e\)\)/.test(src), true)
