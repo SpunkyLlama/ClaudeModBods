@@ -49,11 +49,18 @@ export function taskCreated(todos: Todo[], id: string, subject: string, activeFo
 
 export type TaskPatch = { status?: string; subject?: string; activeForm?: string }
 
-// TaskUpdate changes the fields it names; "deleted" removes the task.
+// TaskUpdate changes the fields it names; "deleted" removes the task. An update for a task
+// we never saw (made before the mod loaded, or in a chat whose list was not saved) adds a
+// placeholder when it carries a status or a subject, so progress still shows: named by the
+// subject if there is one, else "Task <id>". It adds nothing for a delete or an empty update.
 export function taskUpdated(todos: Todo[], id: string, patch: TaskPatch): Todo[] {
   const at = todos.findIndex(t => t.id === id)
   if (at < 0) {
-    return todos
+    if (id === '' || patch.status === 'deleted' || (patch.status === undefined && patch.subject === undefined)) {
+      return todos
+    }
+    const text = patch.subject ?? `Task ${id}`
+    return [...todos, { id, text, active: patch.activeForm ?? text, status: patch.status === undefined ? 'pending' : statusOf(patch.status) }]
   }
   if (patch.status === 'deleted') {
     return todos.filter((_, i) => i !== at)

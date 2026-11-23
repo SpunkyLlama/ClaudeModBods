@@ -45,7 +45,7 @@ check('create with no id adds nothing', taskCreated(t, '', 'x').length, 1)
 t = taskUpdated(t, '7', { status: 'in_progress' })
 check('update sets the status', t[0]?.status, 'in_progress')
 check('update keeps fields it does not name', [t[0]?.text, t[0]?.active], ['Write docs', 'Writing docs'])
-check('update of an unknown id changes nothing', taskUpdated(t, '99', { status: 'completed' }), t)
+check('an empty update of an unknown id changes nothing (a status adds a placeholder: see resume.test.ts)', taskUpdated(t, '99', {}), t)
 check('deleted removes the task', taskUpdated(t, '7', { status: 'deleted' }), [])
 check('a new subject without an activeForm renames the active form too', taskUpdated(t, '7', { subject: 'Ship docs' })[0]?.active, 'Ship docs')
 

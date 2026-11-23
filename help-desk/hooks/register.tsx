@@ -2,6 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import { EMPTY, addCard, addUsage, bandText, bump, fromTodoWrite, syncStatuses, taskCreated, taskUpdated, tokensOf } from './desk'
+import { chatKey, excessKeys, restoreDesk } from './resume'
 
 // All state lives in the session's state atom, not module variables: the app may
 // reload the module between turns. Change the tag if Desk changes.
@@ -13,6 +14,44 @@ const POLL_MS = 1500
 // were not there: they never deny, rewrite or hold anything.
 const OPEN = ($: any, e: any, next: any) => next(e)
 
+const SAVE_EVERY_MS = 10_000 // subagent steps save at most this often
+
+// Save and restore this chat's desk in the plugin's own store (resume.ts), so a chat you left
+// and came back to keeps its list. Top-level so the validator follows `$`. Both fail open: a
+// store problem must never break a session, and a missing record just means an empty band.
+async function persist($: any) {
+  try {
+    const { startedAt } = await $.session.usage()
+    const d = await read($, desk)
+    if (typeof startedAt === 'number' && startedAt > 0 && (d.todos.length > 0 || d.cards.length > 0)) {
+      await $.store.set(chatKey(startedAt), d)
+    }
+  } catch {
+    // fail open
+  }
+}
+
+async function restoreChat($: any) {
+  try {
+    const held = await read($, desk)
+    if (held.todos.length > 0 || held.cards.length > 0) {
+      return // a hot reload keeps state: nothing to restore
+    }
+    const { startedAt } = await $.session.usage()
+    if (typeof startedAt === 'number' && startedAt > 0) {
+      const saved = restoreDesk(await $.store.get(chatKey(startedAt)))
+      if (saved) {
+        await update($, desk, d => (d.todos.length > 0 || d.cards.length > 0 ? d : saved))
+      }
+    }
+    for (const key of excessKeys((await $.store.keys()) as string[])) {
+      await $.store.delete(key)
+    }
+  } catch {
+    // fail open
+  }
+}
+
 // Top-level, because the validator follows `$` only into top-level functions.
 // $.agent.list() is how a finished subagent is noticed: the engine has no event
 // for it, and drops the entry seconds after the agent ends.
@@ -23,18 +62,28 @@ async function poll($: any) {
   }
   const listed = (await $.agent.list()) as { id: string; status: string }[]
   const now = (await $.clock.now()) as number
+  let isChanged = false
   await update($, desk, d => {
     const cards = syncStatuses(d.cards, listed, now)
-    return cards === d.cards ? d : { ...d, cards }
+    if (cards === d.cards) {
+      return d
+    }
+    isChanged = true
+    return { ...d, cards }
   })
+  if (isChanged) {
+    await persist($)
+  }
 }
 
 export const register: Register = (on, options) => {
   // The debug row (userConfig `debug`) is always drawn and says what the hooks have seen.
   const isDebug = options.debug === true
   let timer: { cancel: () => void } | undefined
+  let lastSavedAt = 0
 
   on('session.start', async ($, e, next) => {
+    await restoreChat($)
     timer?.cancel()
     timer = $.clock.every(POLL_MS, () => void poll($))
     return next(e)
@@ -48,6 +97,7 @@ export const register: Register = (on, options) => {
     if (e.agentId === undefined && r.deny === undefined && r.isError !== true) {
       const todos = fromTodoWrite((e as any).todos)
       await update($, desk, d => ({ ...d, todos }))
+      await persist($)
     }
     return r
   }).catch(OPEN)
@@ -58,6 +108,7 @@ export const register: Register = (on, options) => {
     if (e.agentId === undefined && r.deny === undefined && r.isError !== true) {
       const id = String((r.result as any)?.task?.id ?? '')
       await update($, desk, d => ({ ...d, todos: taskCreated(d.todos, id, String((e as any).subject ?? ''), (e as any).activeForm) }))
+      await persist($)
     }
     return r
   }).catch(OPEN)
@@ -72,6 +123,7 @@ export const register: Register = (on, options) => {
         ...d,
         todos: taskUpdated(d.todos, String(a.taskId ?? ''), { status: a.status, subject: a.subject, activeForm: a.activeForm }),
       }))
+      await persist($)
     }
     return r
   }).catch(OPEN)
@@ -90,6 +142,7 @@ export const register: Register = (on, options) => {
         ...d,
         cards: addCard(d.cards, { id, label: e.description, kind: e.subagentType, model: r.model, now }),
       }))
+      await persist($)
     }
     return r
   }).catch(OPEN)
@@ -102,6 +155,11 @@ export const register: Register = (on, options) => {
       const id = e.agentId
       const tokens = tokensOf(r.usage)
       await update($, desk, d => ({ ...bump(d, 'steps'), cards: addUsage(d.cards, id, tokens) }))
+      const now = (await $.clock.now()) as number
+      if (now - lastSavedAt > SAVE_EVERY_MS) {
+        lastSavedAt = now
+        await persist($)
+      }
     }
     return r
   })

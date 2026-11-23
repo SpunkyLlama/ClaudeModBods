@@ -8,7 +8,8 @@ A Claude Code mod that shows what Claude is working on, in one row above the pro
 
 - **To-do list.** The item in progress (its "doing" wording), with how many are done, or the next pending item, or "✓ 7/7 done". It follows both to-do tools Claude Code has (`TodoWrite`, and `TaskCreate` / `TaskUpdate`). Only the main chat's list is shown, not a subagent's own.
 - **Subagents.** How many are running, the first two with their tokens, and how many have finished (failures flagged). A card appears when a subagent starts and is marked done when the engine's agent list stops showing it.
-- **Read-only.** It watches and draws. It never blocks, rewrites or holds anything, writes no file and makes no network call. If one of its hooks fails, the call it watched goes through untouched.
+- **Read-only.** It watches and draws. It never blocks, rewrites or holds anything, writes no file in your project and makes no network call. If one of its hooks fails, the call it watched goes through untouched.
+- **Keeps your list when you leave a chat.** Coming back to a chat starts a fresh session, so the mod saves each chat's to-do text, subagent labels and counters in its own plugin store (nothing from the conversation, newest 50 chats) and restores them on return. A `TaskUpdate` for a task it never saw is shown as a placeholder (named by its subject if it has one, else "Task 3"), so progress still counts.
 
 **This mod reads subagent turns.** Unlike Cache Keeper, which ignores them, Help Desk counts each request a subagent makes toward that subagent's token figure.
 
