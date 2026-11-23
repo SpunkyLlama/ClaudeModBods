@@ -194,14 +194,133 @@ function seenOf(d: { seen?: Partial<Seen> }): Seen {
 }
 
 // The debug row: proof the mod is loaded and drawing, and what its hooks have seen.
-export function debugLine(d: Pick<Desk, 'todos' | 'cards'> & { seen?: Partial<Seen> }): string {
+export function debugLine(d: Pick<Desk, 'todos' | 'cards'> & { seen?: Partial<Seen> }, paneNote?: string): string {
   const s = seenOf(d)
-  return `Help Desk loaded · to-dos ${d.todos.length} · agents ${d.cards.length} · hooks seen: ${s.calls} task calls, ${s.spawns} spawns, ${s.steps} subagent steps`
+  const base = `Help Desk loaded · to-dos ${d.todos.length} · agents ${d.cards.length} · hooks seen: ${s.calls} task calls, ${s.spawns} spawns, ${s.steps} subagent steps`
+  return paneNote === undefined ? base : `${base} · pane: ${paneNote === '' ? 'not opened' : paneNote}`
 }
 
 // The whole band row, or '' when there is nothing to show. With `isDebug` the row is never
 // empty: it says the mod is loaded, then adds whatever there is to show.
-export function bandText(d: Pick<Desk, 'todos' | 'cards'> & { seen?: Partial<Seen> }, isDebug = false): string {
+export function bandText(d: Pick<Desk, 'todos' | 'cards'> & { seen?: Partial<Seen> }, isDebug = false, paneNote?: string): string {
   const main = [todoLine(d.todos), agentsLine(d.cards)].filter((x): x is string => x !== null).join('  │  ')
-  return isDebug ? [main, debugLine(d)].filter(x => x !== '').join('  │  ') : main
+  return isDebug ? [main, debugLine(d, paneNote)].filter(x => x !== '').join('  │  ') : main
+}
+
+// ── The side pane (0.2.0) ────────────────────────────────────────────────────
+
+export type Tone = 'dim' | 'bold' | 'warn'
+export type PaneLine = { text: string; tone?: Tone }
+export type PaneOpts = { cols?: number; isGlance?: boolean }
+
+export const MIN_PANE_ROWS = 4 // a smaller room is treated as this
+const SEPARATOR_FROM_ROWS = 8 // under this the blank line between sections is dropped
+
+type Item = { line: PaneLine; section: 0 | 1; order: number; rank: number }
+
+const fit = (text: string, cols?: number) => (cols !== undefined && cols > 0 ? cut(text, cols) : text)
+
+const todoItem = (t: Todo): PaneLine =>
+  t.status === 'completed'
+    ? { text: `  ✓ ${t.text}`, tone: 'dim' }
+    : t.status === 'in_progress'
+      ? { text: `  ▶ ${t.active}`, tone: 'bold' }
+      : { text: `  ☐ ${t.text}` }
+
+const cardItem = (c: Card): PaneLine => {
+  const details = [c.kind, c.model].filter(x => x !== '').join(', ')
+  const text = `${c.label}${details === '' ? '' : ` (${details})`} · ${k(c.tokens)} tokens · ${c.steps} steps`
+  return c.status === 'done'
+    ? { text: `  ✓ ${text}`, tone: 'dim' }
+    : c.status === 'failed'
+      ? { text: `  ✗ ${text}`, tone: 'warn' }
+      : { text: `  ${c.status === 'idle' ? '⏸' : '▶'} ${text}` }
+}
+
+// What hides first when the room runs out: finished to-dos, then finished agents, then pending
+// to-dos (the last first), then idle agents, then running agents, and the item in progress last.
+// Within a rank the oldest goes first, except for pending, idle and running (the last first).
+const todoRank = (t: Todo) => (t.status === 'completed' ? 0 : t.status === 'pending' ? 2 : 5)
+const cardRank = (c: Card) => (c.status === 'done' || c.status === 'failed' ? 1 : c.status === 'idle' ? 3 : 4)
+
+// The pane's body as lines: the to-do list, then the subagent cards, trimmed to `room` rows.
+// With `isGlance` (the small widget seat) it is the band's summary instead. Every line fits
+// `cols`. When something is cut, the last line says how many items are hidden.
+export function paneLines(d: Pick<Desk, 'todos' | 'cards'>, room: number, opts: PaneOpts = {}): PaneLine[] {
+  const { cols, isGlance = false } = opts
+  if (isGlance) {
+    const glance = [todoLine(d.todos), agentsLine(d.cards)].filter((x): x is string => x !== null)
+    return (glance.length === 0 ? ['Help Desk: nothing yet'] : glance).map(text => ({ text: fit(text, cols) }))
+  }
+  const rows = Math.max(MIN_PANE_ROWS, Math.floor(room))
+  const done = d.todos.filter(t => t.status === 'completed').length
+  const live = d.cards.filter(c => c.status === 'running' || c.status === 'idle').length
+  const ended = d.cards.length - live
+  const failed = d.cards.filter(c => c.status === 'failed').length
+
+  const head1 = `To-do${d.todos.length > 0 ? ` · ${done}/${d.todos.length} done` : ''}`
+  const head2 = `Subagents${live > 0 ? ` · ${live} running` : ''}${ended > 0 ? ` · ${ended} done${failed > 0 ? ` (${failed} failed)` : ''}` : ''}`
+
+  const items: Item[] = [
+    ...d.todos.map((t, i): Item => ({ line: todoItem(t), section: 0, order: i, rank: todoRank(t) })),
+    ...d.cards.map((c, i): Item => ({ line: cardItem(c), section: 1, order: i, rank: cardRank(c) })),
+  ]
+  const hasSeparator = rows >= SEPARATOR_FROM_ROWS
+  const placeholders = (d.todos.length === 0 ? 1 : 0) + (d.cards.length === 0 ? 1 : 0)
+  const avail = rows - 2 - (hasSeparator ? 1 : 0) - placeholders
+
+  let hidden = new Set<Item>()
+  if (items.length > avail) {
+    const budget = Math.max(0, avail - 1) // one row is kept for the "hidden" line
+    const oldestFirst = (it: Item) => it.rank <= 1
+    const byHiding = [...items].sort((a, b) => a.rank - b.rank || (oldestFirst(a) ? a.order - b.order : b.order - a.order))
+    hidden = new Set(byHiding.slice(0, items.length - budget))
+  }
+
+  const body = (section: 0 | 1) => items.filter(it => it.section === section && !hidden.has(it)).map(it => it.line)
+  const out: PaneLine[] = [
+    { text: head1, tone: 'bold' },
+    ...(d.todos.length === 0 ? [{ text: '  No to-do list yet.', tone: 'dim' as Tone }] : body(0)),
+    ...(hasSeparator ? [{ text: '' }] : []),
+    { text: head2, tone: 'bold' },
+    ...(d.cards.length === 0 ? [{ text: '  No subagents yet.', tone: 'dim' as Tone }] : body(1)),
+    ...(hidden.size > 0 ? [{ text: `  … ${hidden.size} hidden`, tone: 'dim' as Tone }] : []),
+  ]
+  return out.map(l => ({ ...l, text: fit(l.text, cols) }))
+}
+
+// One line for the debug row: did the pane draw, and if not, why.
+export function paneNote(r: { isPlaced: boolean; reason?: string }): string {
+  return r.isPlaced ? 'drawn' : r.reason ? `not drawn (${r.reason})` : 'not drawn'
+}
+
+// ── /helpdesk ────────────────────────────────────────────────────────────────
+
+export const COMMAND = { name: 'helpdesk', description: 'Open the Help Desk pane: the to-do list and a card per subagent' }
+
+export type CommandState = { isDone: boolean; isWarned: boolean }
+
+// A plain function, not `$.command`: the plugin validator wants `$.command.register(...)` spelled
+// out at its call site, so register.tsx passes `c => $.command.register(c)`. Commands belong to a
+// session and a session can load the mod after session.start, so this is tried from several early
+// events until it works (as Brain Dump does). Returns a one-time toast line when registering is
+// refused (the engine refuses a name that a user skill holds), else null.
+export async function ensureCommand(
+  state: CommandState,
+  register: (c: { name: string; description: string }) => Promise<unknown>,
+): Promise<string | null> {
+  if (state.isDone) {
+    return null
+  }
+  try {
+    await register(COMMAND)
+    state.isDone = true
+    return null
+  } catch (err) {
+    if (state.isWarned) {
+      return null
+    }
+    state.isWarned = true
+    return `Help Desk: could not register /${COMMAND.name} (${err instanceof Error ? err.message : String(err)}).`
+  }
 }

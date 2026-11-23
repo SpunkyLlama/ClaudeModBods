@@ -17,6 +17,29 @@ A Claude Code mod that shows what Claude is working on, in one row above the pro
 
 "Tokens" is tokens processed: everything a subagent's requests read, wrote or generated, cache reads included. It is a size measure, not a bill, because a cache read costs a fraction of an output token. There is no dollar figure per subagent: the engine reports only a session total, which Cache Keeper shows.
 
+## The pane (0.2.0): `/helpdesk`
+
+Type `/helpdesk` to open a pane with the whole picture, not the one-line summary:
+
+```
+To-do · 3/7 done
+  ✓ Read the code
+  ▶ Writing tests
+  ☐ Ship it
+
+Subagents · 1 running · 2 done
+  ▶ scan repo (Explore, haiku) · 12k tokens · 4 steps
+  ✓ fix tests (general-purpose, sonnet) · 4k tokens · 2 steps
+```
+
+- **It opens only when you ask.** The mod never opens it on its own. An open you ask for is placed at any width; one a mod makes unasked would wait for a very wide terminal.
+- **It shares the band's data**, so the pane and the band change together. Both stay.
+- **What a card shows:** the subagent's short description, type, model, tokens and steps, and whether it is running, idle, done (dim) or failed. It does not show what the subagent is doing right now: the engine's agent list has no such field, so nothing is invented.
+- **Short on room,** the pane hides the oldest finished items first and ends with `… N hidden`. The item in progress is the last thing to go.
+- **The desktop app's small "widget" form** gets the band's two-line summary instead, since it has to read at a glance.
+- **If it does not draw,** `/helpdesk` says why when the engine gives a reason, and the debug row ends with `pane: drawn`, `pane: not drawn (reason)` or `pane: not opened`.
+- If the app refuses the name `/helpdesk` (a user skill of that name would win), a toast says so once.
+
 ## Debug row (0.1.1)
 
 If the band stays blank, turn on the **Debug row** setting. The row then always draws, even with nothing to show:
@@ -31,13 +54,13 @@ Help Desk loaded · to-dos 0 · agents 0 · hooks seen: 0 task calls, 0 spawns, 
 
 The counters count only what happens after the mod loads, so a chat that already has a to-do list shows it only once Claude changes the list.
 
-## Limits in 0.1.0
+## Limits
 
 - Draws only where the app attaches a display surface: `/cache` lists the "display surfaces" it sees. The terminal CLI has one, and so did a cloud session in the desktop app (seen 2026-11-22: `desktop`). Where none is attached, nothing shows. This band has not yet been seen drawing.
 - Finished subagents are noticed by checking the agent list every 1.5 seconds, because the engine has no "subagent finished" event for plugins. A subagent that starts and ends between two checks, before it is ever listed, is marked done after 15 seconds.
-- In-progress items are marked, not flashing, and there is no side pane of subagent cards yet.
+- In-progress items are marked, not flashing. The pane is plain text: no clicking, no per-card dollars.
 - Subagents started by another plugin through `$.agent.spawn` are not seen (the engine skips plugin hooks for them).
-- Not yet tried in a live chat. The logic has offline tests; the drawing and the events have only been checked against the engine's type file.
+- The pane has never been seen drawing. The layout has offline tests; whether the desktop app, the terminal or a cloud session seats and draws it as the engine's type file describes has not been checked live.
 
 ## Install
 
