@@ -54,7 +54,7 @@ have been lost before.
 1. Owner: set `FANTRAX_SOURCES_DIR` and `FANTRAX_BATCHES_DIR` on the Windows
    machine to the old folders. The old defaults are gone from `main`, so local
    runs need them (Actions already sets both).
-2. Owner: the remaining live checks (below): Brain Dump `/braindump` with no text, the Cache Keeper
+2. Owner: the remaining live checks (below): the Cache Keeper
    cold-send guard and one-copy check, the cache lifetime after a pause, and the
    Help Desk details; follow the Objectives checklist under Projects.
 3. Done 2026-11-22: `FANTRAX_USER_AGENT` added, dry run passed, HoD loaded live
@@ -79,9 +79,14 @@ have been lost before.
   `/triage ticket` the entry ends `-> ticket` and its rewrite block is still under
   it, followed by the open questions and a "Your answers:" section holding the
   three answers. Not confirmed: the raw `  > ` prefixes (the paste looked like
-  rendered markdown; the source writes them, `dump.ts:115`). Still to check:
-  `/braindump` with no text (count and last five); the first chat's file was not
-  seen.
+  rendered markdown; the source writes them, `dump.ts:115`). `/braindump` with no
+  text checked later the same day (owner screenshots): in the test chat it printed
+  "0 unsorted of 1 total. Last 1:" with the entry and its `[ticket]` mark, so the
+  count and list work; only one entry existed, so the cap at five is untested. In a
+  new chat it said "Brain dump is empty", most likely the file-location question
+  (the file lives under the folder the chat opened in; which folder each chat used
+  was not checked). Still unexplained: the first chat's "3 unsorted"; its file was
+  not seen.
   Observed, not bugs by themselves: after answers, a capture-the-ideas entry was
   restated as a planning task (question 1 asked for a file name and the answer was
   a name, which may have read as the app's name); one instruction-phrased entry
@@ -89,7 +94,13 @@ have been lost before.
   read one as the task, so that note stays open; in the first chat the band said
   "3 unsorted" when only two entries were visible in the screenshots (unexplained).
 - Cache lifetime: send a message, wait more than 5.5 minutes, send another, run
-  `/cache`, read the learned evidence.
+  `/cache`, read the learned evidence. In progress 2026-11-23 (owner screenshot,
+  desktop app, braindump test chat): `/cache` about 6 minutes after the last reply
+  read "warm 53:51 · 80% hit · 1h?" and "1 turns seen; cache lifetime 1h? assumed,
+  not yet learned". So the countdown runs, but nothing is learned until a message
+  is sent after the pause; that send and a second `/cache` are still to do. A
+  second screenshot read "resumed · cache probably cold" with Σ 0: that is the
+  resumed-chat state, not a test of the lifetime or the guard.
 - Cache Keeper cold-send guard (reviewed 2026-11-22): after a pause longer than
   the learned lifetime, with context at or above `coldGuardMinPercent`, send a
   multi-line prompt. It should be held once with a note. Record whether the text
@@ -149,8 +160,8 @@ have been lost before.
      the `TaskUpdate`-for-an-earlier-task gap if wanted. (b) Brain Dump 0.3.0: done 2026-11-23, see the update below. (c) Cache Keeper guard
      draft recovery and the one-copy check (Live checks, below).
    - Update 2026-11-23: (b) done, including the file check (the block is kept
-     after `/triage ticket`), except `/braindump` with no text (Live checks,
-     Brain Dump 0.3.0).
+     after `/triage ticket`) and `/braindump` with no text (Live checks, Brain Dump
+     0.3.0).
 2. [x] **Review the Cache Keeper cold-send guard** (done 2026-11-22). Gaps: resumed
    chats never trigger it, no offline test, whether a held prompt's text is kept
    is unknown. Live check written; no code change.
@@ -173,7 +184,7 @@ else first), **parked**, **done**.
    auto-delete of merged branches, and deleting `chore/housekeeping` and the
    four merged `mod/cache-keeper/*` branches in the web UI. (The full list of
    merged branches is under Known mess in `CLAUDE.md`.)
-2. **Brain Dump mod** (done, 0.3.0, PRs #6, #8, #14, #17 merged; live check done 2026-11-23 except `/braindump` with no text).
+2. **Brain Dump mod** (done, 0.3.0, PRs #6, #8, #14, #17 merged; live check done 2026-11-23, one oddity open: see Live checks).
    `/braindump <text>` (renamed from `/dump` in 0.3.0, because a user skill named
    `dump` blocks the name) appends a timestamped line to
    `.claude/memory/BRAIN-DUMP.md`. `/braindump` alone shows the count and last five. `/triage` marks the oldest
