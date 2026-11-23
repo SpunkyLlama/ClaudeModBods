@@ -54,7 +54,7 @@ have been lost before.
 1. Owner: set `FANTRAX_SOURCES_DIR` and `FANTRAX_BATCHES_DIR` on the Windows
    machine to the old folders. The old defaults are gone from `main`, so local
    runs need them (Actions already sets both).
-2. Owner: the remaining live checks (below): the Brain Dump file check, the Cache Keeper
+2. Owner: the remaining live checks (below): Brain Dump `/braindump` with no text, the Cache Keeper
    cold-send guard and one-copy check, the cache lifetime after a pause, and the
    Help Desk details; follow the Objectives checklist under Projects.
 3. Done 2026-11-22: `FANTRAX_USER_AGENT` added, dry run passed, HoD loaded live
@@ -70,14 +70,18 @@ have been lost before.
 - Cache Keeper `/handoff`: run it here and confirm the `## Projects` section of
   `PLAN.md` lands at the bottom of `HANDOFF.md`.
 - Brain Dump 0.3.0 (checked 2026-11-23, desktop app, two new chats; owner
-  screenshots, not the file). Worked: `/braindump test entry` (no "could not
+  screenshots, plus the second chat's file pasted by the owner). Worked: `/braindump test entry` (no "could not
   register" toast, band count right); `/rewrite` (Haiku, for Opus 5.5, with open
   questions); `/answer` refused before a `/rewrite` and showed its usage with no
   text; `/answer <text>` accepted and `/rewrite redo` then used the answers;
   `/rewrite fable-4` refused by name; `/triage ticket` marked the entry, and the
-  band row went away at zero ("All sorted"). Still to check: that the `  > ` block
-  is still under the entry in `.claude/memory/BRAIN-DUMP.md` after `/triage ticket`
-  (the file was not seen), and `/braindump` with no text (count and last five).
+  band row went away at zero ("All sorted"). File check (second chat): after
+  `/triage ticket` the entry ends `-> ticket` and its rewrite block is still under
+  it, followed by the open questions and a "Your answers:" section holding the
+  three answers. Not confirmed: the raw `  > ` prefixes (the paste looked like
+  rendered markdown; the source writes them, `dump.ts:115`). Still to check:
+  `/braindump` with no text (count and last five); the first chat's file was not
+  seen.
   Observed, not bugs by themselves: after answers, a capture-the-ideas entry was
   restated as a planning task (question 1 asked for a file name and the answer was
   a name, which may have read as the app's name); one instruction-phrased entry
@@ -144,8 +148,9 @@ have been lost before.
    - Next, in this order: (a) Help Desk: the two unverified details above, then
      the `TaskUpdate`-for-an-earlier-task gap if wanted. (b) Brain Dump 0.3.0: done 2026-11-23, see the update below. (c) Cache Keeper guard
      draft recovery and the one-copy check (Live checks, below).
-   - Update 2026-11-23: (b) done, except the file check and `/braindump` with no
-     text (Live checks, Brain Dump 0.3.0).
+   - Update 2026-11-23: (b) done, including the file check (the block is kept
+     after `/triage ticket`), except `/braindump` with no text (Live checks,
+     Brain Dump 0.3.0).
 2. [x] **Review the Cache Keeper cold-send guard** (done 2026-11-22). Gaps: resumed
    chats never trigger it, no offline test, whether a held prompt's text is kept
    is unknown. Live check written; no code change.
@@ -168,7 +173,7 @@ else first), **parked**, **done**.
    auto-delete of merged branches, and deleting `chore/housekeeping` and the
    four merged `mod/cache-keeper/*` branches in the web UI. (The full list of
    merged branches is under Known mess in `CLAUDE.md`.)
-2. **Brain Dump mod** (done, 0.3.0, PRs #6, #8, #14, #17 merged; live check done 2026-11-23 except the file check).
+2. **Brain Dump mod** (done, 0.3.0, PRs #6, #8, #14, #17 merged; live check done 2026-11-23 except `/braindump` with no text).
    `/braindump <text>` (renamed from `/dump` in 0.3.0, because a user skill named
    `dump` blocks the name) appends a timestamped line to
    `.claude/memory/BRAIN-DUMP.md`. `/braindump` alone shows the count and last five. `/triage` marks the oldest
