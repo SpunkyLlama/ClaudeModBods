@@ -92,19 +92,13 @@ runner cannot run it.
 
 ## Known mess
 
-- Merged remote branches need deleting in the web UI. As of 2026-11-22, all 22
-  remote branches other than `main` are merged into `main` (checked by git
-  ancestry against `main` at `68d210a`, through PR #20):
-  `chore/housekeeping`, `chore/neutral-author-fields`, `docs/plan-update`,
-  `docs/plan-after-brain-dump`, `docs/brain-dump-0-2-0`, `docs/brain-dump-0-2-1`,
-  `docs/brain-dump-0-3-0`, `docs/name-privacy-status`, `docs/help-desk-findings`,
-  `docs/help-desk-live-result`, `docs/objectives-checklist`,
-  `mod/brain-dump/feat-initial`, `mod/brain-dump/feat-rename-dump`,
-  `mod/brain-dump/feat-rewrite`, `mod/brain-dump/fix-late-register`,
-  `mod/help-desk/feat-diagnostics`, `mod/help-desk/feat-initial`, and under
-  `mod/cache-keeper/`: `feat-pinned-list`, `feat-resume-state`,
-  `feat-ttl-autodetect`, `fix-handoff-fork-evidence`, `fix-ignore-subagents`.
-- No branch protection and no auto-delete of merged branches yet. Settings,
-  General, "Automatically delete head branches".
+- Two remote branches remain, checked 2026-11-23 at `main` `499bf8f`:
+  `mod/cache-keeper/feat-resume-state` and `mod/cache-keeper/feat-ttl-autodetect`.
+  Neither has a PR of its own. Their commits are in `main` by git ancestry
+  (probably through PR #2; not verified). Delete them in the web UI once the
+  owner is sure.
+- "Automatically delete head branches" is on (owner, 2026-11-22), so branches of
+  PRs merged from now on should delete themselves. If one lingers, delete it in
+  the web UI: cloud sessions get a 403. No branch protection yet.
 - The live check that the cache lifetime is learned after a pause over 5.5
   minutes has not been done.
