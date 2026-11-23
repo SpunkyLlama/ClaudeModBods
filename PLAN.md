@@ -55,8 +55,7 @@ have been lost before.
    machine to the old folders. The old defaults are gone from `main`, so local
    runs need them (Actions already sets both).
 2. Owner: the remaining live checks (below): the Cache Keeper
-   cold-send guard and one-copy check, the cache lifetime after a pause, and the
-   Help Desk details; follow the Objectives checklist under Projects.
+   cold-send guard and one-copy check and the Help Desk details; follow the Objectives checklist under Projects.
 3. Done 2026-11-22: `FANTRAX_USER_AGENT` added, dry run passed, HoD loaded live
    (owner-approved). The user agent identifies the program only: no name, email
    or other personal contact (project 10). Remaining ETL steps are item 4 of the
@@ -85,22 +84,38 @@ have been lost before.
   count and list work; only one entry existed, so the cap at five is untested. In a
   new chat it said "Brain dump is empty", most likely the file-location question
   (the file lives under the folder the chat opened in; which folder each chat used
-  was not checked). Still unexplained: the first chat's "3 unsorted"; its file was
-  not seen.
+  was not checked). The first chat's "3 unsorted" has a likely cause in the
+  source (not run): the band count is read from the file once per chat
+  (`register.tsx:38`) and changed afterwards only by that chat's own commands,
+  while `/braindump` with no text re-reads the file. So another chat in the same
+  folder, or a hand edit, would leave the band stale. Not verified for that chat;
+  its file was not seen. Fix not started.
   Observed, not bugs by themselves: after answers, a capture-the-ideas entry was
   restated as a planning task (question 1 asked for a file name and the answer was
   a name, which may have read as the app's name); one instruction-phrased entry
   (2026-11-23) kept its capture meaning, against the 2026-11-22 case where Haiku
   read one as the task, so that note stays open; in the first chat the band said
-  "3 unsorted" when only two entries were visible in the screenshots (unexplained).
+  "3 unsorted" when only two entries were visible in the screenshots (see above).
 - Cache lifetime: send a message, wait more than 5.5 minutes, send another, run
-  `/cache`, read the learned evidence. In progress 2026-11-23 (owner screenshot,
-  desktop app, braindump test chat): `/cache` about 6 minutes after the last reply
-  read "warm 53:51 · 80% hit · 1h?" and "1 turns seen; cache lifetime 1h? assumed,
-  not yet learned". So the countdown runs, but nothing is learned until a message
-  is sent after the pause; that send and a second `/cache` are still to do. A
-  second screenshot read "resumed · cache probably cold" with Σ 0: that is the
-  resumed-chat state, not a test of the lifetime or the guard.
+  `/cache`, read the learned evidence. Done 2026-11-23 (owner, desktop app, a chat
+  kept open): about 6 minutes after a reply the status read "warm 53:59 · 100% hit ·
+  1h✓"; after the next reply, sent after that pause, `/cache` read "warm 58:08 · 99%
+  hit · 1h✓ learned (evidence ww)", 8 turns seen. `ww` is two replies, each at
+  least 330s after the one before and each reading at least 80% from the cache
+  (`lifetime.ts:6-24`), so the cache survived pauses over 5.5 minutes: 1h confirmed.
+  Not seen: the raw token counts (this is the mod's own reading), and which pauses
+  made up the `ww`.
+- Cache Keeper says "resumed" after leaving a chat (owner screenshots, 2026-11-23).
+  The braindump chat was warm when the owner left it; returning after about 11
+  minutes away (owner's estimate) it read "resumed · cache probably cold, next msg re-caches ~83k" with Σ 0 and "0 turns
+  seen"; a second chat showed the same at about 5.5 minutes. Cause in the source,
+  not run: `register.tsx:75` shows "resumed" whenever Cache Keeper has seen no reply
+  (`S.lastAt === 0`), the context is above zero and the session is over 60s old. It
+  never looks at the time away, and its own comment says a resume within the
+  lifetime can still be warm. Not verified: why the state is empty after a chat
+  switch (guess: the app reloads the session), and whether that chat's cache was
+  really cold (no message was sent there; with a 1h lifetime it should still have
+  been warm after 11 minutes). Fix not started.
 - Cache Keeper cold-send guard (reviewed 2026-11-22): after a pause longer than
   the learned lifetime, with context at or above `coldGuardMinPercent`, send a
   multi-line prompt. It should be held once with a note. Record whether the text
@@ -268,7 +283,8 @@ else first), **parked**, **done**.
    Do not rebuild it. Later, optionally, a thin read-only mod showing open items
    from `MEMORY.md`, GitHub issue and PR state, and the queue file.
 5. **Cache Keeper upkeep** (next, owner steps left).
-   - Live check that the cache lifetime is learned (see Live checks above).
+   - Live check that the cache lifetime is learned: done 2026-11-23, 1h (see Live
+     checks above).
    - Done, 1.2.0, PR #5: `/handoff` appends one section of a file verbatim
      (`pinnedFile` default `PLAN.md`, `pinnedHeading` default `## Projects`) so
      a list survives the under-400-word summary. Not yet seen in a live chat.
