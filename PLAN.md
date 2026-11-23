@@ -11,9 +11,9 @@ have been lost before.
   #5, #6, #8, #12, #14, #16, #17; docs PRs #7, #9, #11, #13, #15). Offline tests and
   `claude plugin validate --strict` pass for all three; CI was green on each PR.
   Live so far (owner, desktop app, 2026-11-22): Brain Dump `/triage`, `/triage ticket`
-  and `/rewrite` (Haiku wrote a prompt) ran; `/answer`, `/rewrite redo` on a fresh
-  entry and `/rewrite fable-4` are not checked; 0.3.0 (`/braindump`) is not yet
-  checked. Help Desk hooks fire in the desktop app (2026-11-22, see below). `/cache` showed the cache lifetime
+  and `/rewrite` (Haiku wrote a prompt) ran on 0.2.1. Brain Dump 0.3.0 was checked
+  on 2026-11-23 (see Live checks): all steps ran as expected except two still
+  unverified. Help Desk hooks fire in the desktop app (2026-11-22, see below). `/cache` showed the cache lifetime
   learned as 1h from warm replies (`www`).
 - First live findings (2026-11-22, desktop app, cloud sessions):
   - A cloud session in the desktop app does attach a display surface (`/cache`
@@ -54,7 +54,7 @@ have been lost before.
 1. Owner: set `FANTRAX_SOURCES_DIR` and `FANTRAX_BATCHES_DIR` on the Windows
    machine to the old folders. The old defaults are gone from `main`, so local
    runs need them (Actions already sets both).
-2. Owner: the remaining live checks (below): Brain Dump 0.3.0, the Cache Keeper
+2. Owner: the remaining live checks (below): the Brain Dump file check, the Cache Keeper
    cold-send guard and one-copy check, the cache lifetime after a pause, and the
    Help Desk details; follow the Objectives checklist under Projects.
 3. Done 2026-11-22: `FANTRAX_USER_AGENT` added, dry run passed, HoD loaded live
@@ -69,15 +69,21 @@ have been lost before.
 ## Live checks (owner; Claude cannot run these)
 - Cache Keeper `/handoff`: run it here and confirm the `## Projects` section of
   `PLAN.md` lands at the bottom of `HANDOFF.md`.
-- Brain Dump 0.3.0 (the command is `/braindump`, not `/dump`; start a new chat after
-  updating). Done on 0.2.1: `/triage`, `/triage ticket`, `/rewrite`. Still to do:
-  `/braindump test` (no "could not register" toast); `/braindump <a new entry>`,
-  `/rewrite` (check the block under the entry), `/answer only on mobile Safari`,
-  `/rewrite redo` (run it before triaging: it only takes unsorted entries, so after
-  `/triage` it says "Nothing to rewrite"), `/rewrite fable-4` (refused by name),
-  then `/triage ticket` on the entry (block kept). Note: an entry phrased like an
-  instruction to Claude is read by Haiku as the task (seen 2026-11-22); that is
-  the entry's wording, not a bug.
+- Brain Dump 0.3.0 (checked 2026-11-23, desktop app, two new chats; owner
+  screenshots, not the file). Worked: `/braindump test entry` (no "could not
+  register" toast, band count right); `/rewrite` (Haiku, for Opus 5.5, with open
+  questions); `/answer` refused before a `/rewrite` and showed its usage with no
+  text; `/answer <text>` accepted and `/rewrite redo` then used the answers;
+  `/rewrite fable-4` refused by name; `/triage ticket` marked the entry, and the
+  band row went away at zero ("All sorted"). Still to check: that the `  > ` block
+  is still under the entry in `.claude/memory/BRAIN-DUMP.md` after `/triage ticket`
+  (the file was not seen), and `/braindump` with no text (count and last five).
+  Observed, not bugs by themselves: after answers, a capture-the-ideas entry was
+  restated as a planning task (question 1 asked for a file name and the answer was
+  a name, which may have read as the app's name); one instruction-phrased entry
+  (2026-11-23) kept its capture meaning, against the 2026-11-22 case where Haiku
+  read one as the task, so that note stays open; in the first chat the band said
+  "3 unsorted" when only two entries were visible in the screenshots (unexplained).
 - Cache lifetime: send a message, wait more than 5.5 minutes, send another, run
   `/cache`, read the learned evidence.
 - Cache Keeper cold-send guard (reviewed 2026-11-22): after a pause longer than
@@ -136,10 +142,10 @@ have been lost before.
      pass, validator passes, and two deliberate breaks (token formatter,
      `agent.spawn` counter) each made tests fail.
    - Next, in this order: (a) Help Desk: the two unverified details above, then
-     the `TaskUpdate`-for-an-earlier-task gap if wanted. (b) Brain Dump 0.3.0: `/braindump test entry` typed in full (the
-     2026-11-22 attempt was typed `/baindump`), then `/rewrite`, `/answer`,
-     `/rewrite redo` before triaging, `/rewrite fable-4`. (c) Cache Keeper guard
+     the `TaskUpdate`-for-an-earlier-task gap if wanted. (b) Brain Dump 0.3.0: done 2026-11-23, see the update below. (c) Cache Keeper guard
      draft recovery and the one-copy check (Live checks, below).
+   - Update 2026-11-23: (b) done, except the file check and `/braindump` with no
+     text (Live checks, Brain Dump 0.3.0).
 2. [x] **Review the Cache Keeper cold-send guard** (done 2026-11-22). Gaps: resumed
    chats never trigger it, no offline test, whether a held prompt's text is kept
    is unknown. Live check written; no code change.
@@ -162,7 +168,7 @@ else first), **parked**, **done**.
    auto-delete of merged branches, and deleting `chore/housekeeping` and the
    four merged `mod/cache-keeper/*` branches in the web UI. (The full list of
    merged branches is under Known mess in `CLAUDE.md`.)
-2. **Brain Dump mod** (done, 0.3.0, PRs #6, #8, #14, #17 merged; live check partly done).
+2. **Brain Dump mod** (done, 0.3.0, PRs #6, #8, #14, #17 merged; live check done 2026-11-23 except the file check).
    `/braindump <text>` (renamed from `/dump` in 0.3.0, because a user skill named
    `dump` blocks the name) appends a timestamped line to
    `.claude/memory/BRAIN-DUMP.md`. `/braindump` alone shows the count and last five. `/triage` marks the oldest
