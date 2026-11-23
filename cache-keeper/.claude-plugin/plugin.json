@@ -1,6 +1,6 @@
 {
   "name": "cache-keeper",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Prompt-cache warm/cold status, tokens and cost, and a nudge to start a fresh chat, with /handoff to carry the conversation over.",
   "types": "./types/index.d.ts",
   "userConfig": {
