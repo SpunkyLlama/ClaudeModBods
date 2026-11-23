@@ -32,7 +32,7 @@ new summary under 400 words, so never keep a list there. It is gitignored.
 |---|---|---|
 | Cache Keeper | `cache-keeper/` | Shipped, version 1.2.1 |
 | Brain Dump | `brain-dump/` | Shipped, version 0.3.0 (live check partly done) |
-| Help Desk | `help-desk/` | Shipped, version 0.1.1 (live check partly done: hooks fire in the desktop app; band details unverified) |
+| Help Desk | `help-desk/` | Shipped, version 0.1.2 (live check partly done: hooks fire in the desktop app; band details unverified) |
 
 ## Working style
 

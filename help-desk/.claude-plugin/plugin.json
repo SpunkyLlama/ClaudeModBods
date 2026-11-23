@@ -1,6 +1,6 @@
 {
   "name": "help-desk",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A band above the prompt with Claude's to-do list and the subagents running, with tokens per subagent. Read-only.",
   "types": "./types/index.d.ts",
   "license": "MIT",
