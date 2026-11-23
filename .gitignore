@@ -1,6 +1,9 @@
 # Overwritten by every /handoff: scratch, never a place for lists.
 HANDOFF.md
 
+# Written by the brain-dump mod: the owner's private thoughts, never for a public repo.
+.claude/memory/BRAIN-DUMP.md
+
 # continual-learning hook (skills-plugins-hooks-agents) writes this per repo.
 .claude/learnings.db
 
