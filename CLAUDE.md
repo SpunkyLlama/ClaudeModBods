@@ -92,13 +92,10 @@ runner cannot run it.
 
 ## Known mess
 
-- Two remote branches remain, checked 2026-11-23 at `main` `499bf8f`:
-  `mod/cache-keeper/feat-resume-state` and `mod/cache-keeper/feat-ttl-autodetect`.
-  Neither has a PR of its own. Their commits are in `main` by git ancestry
-  (probably through PR #2; not verified). Delete them in the web UI once the
-  owner is sure.
-- "Automatically delete head branches" is on (owner, 2026-11-22), so branches of
-  PRs merged from now on should delete themselves. If one lingers, delete it in
-  the web UI: cloud sessions get a 403. No branch protection yet.
+- "Automatically delete head branches" is on (owner, 2026-11-22) and worked on
+  PR #23 (2026-11-23), so branches of merged PRs delete themselves. All other
+  remote branches were deleted by the owner (checked 2026-11-23: only `main`
+  remains). If one lingers, delete it in the web UI: cloud sessions get a 403.
+  No branch protection yet.
 - The live check that the cache lifetime is learned after a pause over 5.5
   minutes has not been done.
