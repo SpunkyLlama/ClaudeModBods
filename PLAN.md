@@ -60,12 +60,12 @@ have been lost before.
    (owner-approved). The user agent identifies the program only: no name, email
    or other personal contact (project 10). Remaining ETL steps are item 4 of the
    Objectives checklist (Projects, below).
-4. Owner: branch protection requiring `tests` and `validate` (ModBods) and
-   `pytest` (ETL), with required approvals at 0 (every session acts as the owner,
-   and GitHub does not let an author approve their own PR); neither repo had a
-   ruleset on 2026-11-24. Also auto-delete of merged branches, and deleting
-   `master` (the owner's old unused ETL branch) and the merged branches in the
-   web UI.
+4. Owner: branch protection. ModBods is done (2026-11-24: `tests` and `validate`,
+   required approvals at 0, no bypass). ETL still has none: a ruleset requiring
+   `pytest`, with approvals at 0 (every session acts as the owner, and GitHub
+   does not let an author approve their own PR). Also auto-delete of merged
+   branches, and deleting `master` (the owner's old unused ETL branch) and the
+   merged branches in the web UI.
 5. Then Help Desk follow-ups (project 3), once its live check says what is wrong
    or missing: flashing, the side pane, per-card dollars.
 
@@ -201,19 +201,39 @@ have been lost before.
      Open: the path rule (the manager must not merge a builder PR touching the
      workflows, `sql/`, the loaders or the scraper) is a written rule, not a
      technical fence.
-   - Owner's clone of his repo was made 2026-11-24 and is at `aefbc68` (from the
-     owner's screenshot), but not at the intended path: run in Git Bash, the
-     backslashes were dropped, and Git Bash read `C:claude-live...` as a path
-     relative to that shell's current folder. The folder (probably named
-     `claude-liveskills-plugins-hooks-agents`) is not yet found; it must be moved
-     or re-cloned. Not done yet: the plugin folders named in
-     `CLAUDE_CODE_PLUGIN_DIRS`, the drafts copied into the ETL checkout,
-     `dispatch-projects.json`, branch protection.
+   - Done 2026-11-24 (owner): the clone of his repo is at `aefbc68` in
+     `C:\claude-live\skills-plugins-hooks-agents` (owner's screenshot). The first
+     attempt, in Git Bash, dropped the backslashes and cloned into the wrong
+     folder; it was found and moved. Lesson: use forward slashes or quotes in Git
+     Bash, and run Windows commands in PowerShell.
+   - Done 2026-11-24 (owner): the ModBods ruleset `protect-main` is active and now
+     requires `validate` and `tests` (it first listed `pytest` and `modbods`, which
+     never run there, so no PR could merge; read back by Claude). ETL PR 21 (the
+     `.gitignore` lines) is merged.
+   - Not done yet: the ETL ruleset (zero rulesets on 2026-11-24); the plugin
+     folders named in `CLAUDE_CODE_PLUGIN_DIRS`; the drafts copied into the ETL
+     checkout; `dispatch-projects.json`; a second ETL clone outside OneDrive
+     (owner suggested a folder under Documents; Claude advised a path that
+     OneDrive cannot redirect, such as `C:\work\fantasy-baseball-etl`, because
+     `ls -ld` could not show whether Documents is synced).
    - Risk to check: the ETL checkout is inside OneDrive (path private), and each
      builder makes a worktree and a `.venv` under `.claude/worktrees/` there. Not
      tested; a second clone outside OneDrive for dispatch is the safer shape.
-   - How Claude Code is run on that machine (CLI or desktop app) is not yet known;
-     the manager's `claude agents --json` and `claude stop` need the CLI.
+   - Claude Code on that machine (owner, 2026-11-24): the owner uses the desktop
+     app, and runs their own Python scripts from a Windows prompt; no agent
+     sessions or builders have been used. `claude` was not found in Git Bash. The
+     native installer was then run in PowerShell (version 2.1.331, installed under
+     the user profile's `.local\bin`), but that folder is not on PATH, so plain
+     `claude` is still not found. Run by its full path in PowerShell it works
+     (owner's screenshot): `--version` prints 2.1.331 and `agents --json` prints
+     `[]`, valid and empty, so no background sessions are listed; whether sessions
+     the desktop app starts would appear there is unknown. Not yet done: add the
+     folder to the user PATH and open a new terminal (`dispatch.json` calls bare
+     `claude`, and a full path would put the user name in a committed file). The
+     manager's `claude agents --json` and `claude stop` need the CLI. Still open: whether his setup runs from the desktop app (the
+     owner is asking its author). The plugin folders in `CLAUDE_CODE_PLUGIN_DIRS`
+     live in `~/.claude/settings.json`, which every session on the machine reads,
+     the desktop app's included, so hold that step until the CLI works.
 4. [ ] **Hoops and API ETL** (ETL repo; gated, owner go-ahead for each database
    write). State: HoD loaded live and reconciled (28 of 28 roster groups match);
    read-path SQL (`sql/fantrax_api_read_views.sql`, ETL PR #20) merged but NOT
@@ -347,15 +367,16 @@ else first), **parked**, **done**.
    anonymous writes on `contract_decisions`, `team_cap_settings` and `teams`
    (the owner does not trust public access). Upgrade SheetJS from 0.18.5
    (versions before 0.19.3 have a known prototype-pollution issue; verify).
-   First Green, memory tier, and `main` versus `pybaseball`: `main` now exists
-   (2026-11-24) at the same commit as `pybaseball` (`4b39a09`, both checked on
-   GitHub), so nothing was lost, and the owner reports Pages now reads `main` as
-   its source (Claude cannot see Pages settings). `pybaseball` still exists on
-   GitHub: keep it until the site is confirmed working from `main`. A read-only
-   check found that `index.html` (the whole repo) holds no reference to the branch
+   First Green and memory tier. `main` versus `pybaseball`: done 2026-11-24.
+   `main` was created at the same commit as `pybaseball` (`4b39a09`, both checked
+   on GitHub), the owner reports Pages now reads `main` as its source (Claude
+   cannot see Pages settings), and the owner then removed `pybaseball`: GitHub
+   lists only `main` (checked by Claude the same day). A read-only check before
+   that found that `index.html` (the whole repo) holds no reference to the branch
    name and no branch-specific URL; the owner expected the HTML to need updating,
    which that check does not confirm. NOT checked: that the live site loads from
-   `main` (Claude's session cannot reach github.io). Done 2026-11-15:
+   `main` (Claude's session cannot reach github.io); the owner should open it.
+   Done 2026-11-15:
    dropped `anon_insert_dp` and `anon_update_dp` on `draft_picks`. To undo:
    `create policy anon_insert_dp on public.draft_picks for insert to anon with check (true);`
    and `create policy anon_update_dp on public.draft_picks for update to anon using (true) with check (true);`.
