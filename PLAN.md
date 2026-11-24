@@ -60,8 +60,12 @@ have been lost before.
    (owner-approved). The user agent identifies the program only: no name, email
    or other personal contact (project 10). Remaining ETL steps are item 4 of the
    Objectives checklist (Projects, below).
-4. Owner: branch protection requiring `tests` (ModBods) and `pytest` (ETL),
-   auto-delete of merged branches, and deleting the merged branches in the web UI.
+4. Owner: branch protection requiring `tests` and `validate` (ModBods) and
+   `pytest` (ETL), with required approvals at 0 (every session acts as the owner,
+   and GitHub does not let an author approve their own PR); neither repo had a
+   ruleset on 2026-11-24. Also auto-delete of merged branches, and deleting
+   `master` (the owner's old unused ETL branch) and the merged branches in the
+   web UI.
 5. Then Help Desk follow-ups (project 3), once its live check says what is wrong
    or missing: flashing, the side pane, per-card dollars.
 
@@ -181,8 +185,35 @@ have been lost before.
    chats never trigger it, no offline test, whether a held prompt's text is kept
    is unknown. Live check written; no code change.
 3. [ ] **Adopt benjamininja's planner, builder-manager and owner-queue** on the
-   Windows machine (gated: owner; projects 4 and 9). Not started; his repo and
-   `docs/handoff/baseball-session-dispatch.md` have not been read by Claude.
+   Windows machine (gated: owner; projects 4 and 9). Doing, 2026-11-24.
+   - Read by Claude (read, not run): his handoff doc, the session-rules and
+     session-dispatch skills, the role files, the owner-queue mod's code and
+     `dispatch.ps1` / `relink_live.ps1`, at `aefbc68`. Not read: the owner-queue
+     README beyond its start, the plugins' tests, `project-memory-template`.
+   - Owner's choices: full setup, ETL repo first; the manager merges a dispatched
+     ticket's PR once the owner has invoked the dispatch skill (his "two-key
+     merge"); install only the two plugin folders (`owner-queue`,
+     `session-dispatch-managers-build-review`) from a clone pinned at `aefbc68`,
+     and do not run `relink_live.ps1`. The owner trusts the author; the pin
+     is about mistakes and blast radius, not intent.
+   - Drafts merged (ModBods PRs #34, #35): `docs/task3-etl-drafts/`. Not applied
+     anywhere. The `CLAUDE.md` wording for a delegated merge is a proposal only.
+     Open: the path rule (the manager must not merge a builder PR touching the
+     workflows, `sql/`, the loaders or the scraper) is a written rule, not a
+     technical fence.
+   - Owner's clone of his repo was made 2026-11-24 and is at `aefbc68` (from the
+     owner's screenshot), but not at the intended path: run in Git Bash, the
+     backslashes were dropped, and Git Bash read `C:claude-live...` as a path
+     relative to that shell's current folder. The folder (probably named
+     `claude-liveskills-plugins-hooks-agents`) is not yet found; it must be moved
+     or re-cloned. Not done yet: the plugin folders named in
+     `CLAUDE_CODE_PLUGIN_DIRS`, the drafts copied into the ETL checkout,
+     `dispatch-projects.json`, branch protection.
+   - Risk to check: the ETL checkout is inside OneDrive (path private), and each
+     builder makes a worktree and a `.venv` under `.claude/worktrees/` there. Not
+     tested; a second clone outside OneDrive for dispatch is the safer shape.
+   - How Claude Code is run on that machine (CLI or desktop app) is not yet known;
+     the manager's `claude agents --json` and `claude stop` need the CLI.
 4. [ ] **Hoops and API ETL** (ETL repo; gated, owner go-ahead for each database
    write). State: HoD loaded live and reconciled (28 of 28 roster groups match);
    read-path SQL (`sql/fantrax_api_read_views.sql`, ETL PR #20) merged but NOT
@@ -316,7 +347,15 @@ else first), **parked**, **done**.
    anonymous writes on `contract_decisions`, `team_cap_settings` and `teams`
    (the owner does not trust public access). Upgrade SheetJS from 0.18.5
    (versions before 0.19.3 have a known prototype-pollution issue; verify).
-   First Green, memory tier, and `main` versus `pybaseball`. Done 2026-11-15:
+   First Green, memory tier, and `main` versus `pybaseball`: `main` now exists
+   (2026-11-24) at the same commit as `pybaseball` (`4b39a09`, both checked on
+   GitHub), so nothing was lost, and the owner reports Pages now reads `main` as
+   its source (Claude cannot see Pages settings). `pybaseball` still exists on
+   GitHub: keep it until the site is confirmed working from `main`. A read-only
+   check found that `index.html` (the whole repo) holds no reference to the branch
+   name and no branch-specific URL; the owner expected the HTML to need updating,
+   which that check does not confirm. NOT checked: that the live site loads from
+   `main` (Claude's session cannot reach github.io). Done 2026-11-15:
    dropped `anon_insert_dp` and `anon_update_dp` on `draft_picks`. To undo:
    `create policy anon_insert_dp on public.draft_picks for insert to anon with check (true);`
    and `create policy anon_update_dp on public.draft_picks for update to anon using (true) with check (true);`.
@@ -336,8 +375,8 @@ else first), **parked**, **done**.
    Auto-delete of merged branches. Decide on `batches/` (35 league-data SQL
    files tracked in a public repo). Decide on Pages. Check that Decision Engine
    and Power BI treat a null Savant percentile as "not qualified", not zero.
-   Verify the old database credentials were rotated (the owner says handled;
-   not verified). Write a code-review ruleset. Test gaps: scraper, Supabase
+   The old database credentials were rotated (owner, 2026-11-24; Claude cannot
+   verify it). Write a code-review ruleset. Test gaps: scraper, Supabase
    load step, standings parser, date helpers.
 9. **benjamininja setup on the Windows machine** (gated, owner). His
    `setup-project-memory` skill, owner-queue mod, session-dispatch plugin,
