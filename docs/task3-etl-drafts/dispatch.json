@@ -1,0 +1,14 @@
+{
+  "//": "DRAFT for the owner. Copy to <main checkout>/.claude/dispatch.json by hand; no agent writes it. No absolute path and no user name in it, so it can be committed (name privacy).",
+  "agent": "stage-builder",
+  "buildersSettings": ".claude/builders.settings.json",
+  "buildersProfiles": "",
+  "claude": "claude",
+  "//setup": "Runs in each new worktree, as written (PowerShell). Makes a project-local .venv from the Python on PATH, so the builders' pytest rule is a relative path with no user name in it. Start the manager session from an Anaconda PowerShell Prompt with a Python 3.11 environment active, or these lines fail. Use -NoSetup for a read-only job.",
+  "setup": [
+    "python -m venv .venv",
+    ".venv\\Scripts\\python.exe -m pip install -r requirements-dev.txt"
+  ],
+  "readLine": "Read .claude/memory/PROJECT-RULES.md and .claude/memory/NEEDS-OWNER.md, then load the session-rules skill.",
+  "tiers": {}
+}
