@@ -250,7 +250,7 @@ else first), **parked**, **done**.
    auto-delete of merged branches, and deleting `chore/housekeeping` and the
    four merged `mod/cache-keeper/*` branches in the web UI. (The full list of
    merged branches is under Known mess in `CLAUDE.md`.)
-2. **Brain Dump mod** (done, 0.3.0, PRs #6, #8, #14, #17 merged; live check done 2026-11-23, one oddity open: see Live checks).
+2. **Brain Dump mod** (done, 0.3.1, PRs #6, #8, #14, #17, #31 merged; 0.3.0 live-checked 2026-11-23. **Pending live check of 0.3.1** (the band count is re-read on every prompt, not once per chat): open two chats in one folder, run `/braindump test` in one, send any message in the other, and its band count should rise.)
    `/braindump <text>` (renamed from `/dump` in 0.3.0, because a user skill named
    `dump` blocks the name) appends a timestamped line to
    `.claude/memory/BRAIN-DUMP.md`. `/braindump` alone shows the count and last five. `/triage` marks the oldest
@@ -268,7 +268,7 @@ else first), **parked**, **done**.
    Anthropic's prompting pages for Fable 5.2, Opus 5.5, Sonnet 5.5 and Haiku 5.5
    only; refresh them as models change. Not covered: Opus 5 and 4.8, Sonnet 5,
    Fable 5 and 5.1 (refused by name).
-3. **Help Desk mod** (done, 0.1.1, PRs #12 and #16 merged; live check partly done: hooks fire, band details unverified).
+3. **Help Desk mod** (done, 0.2.0, PRs #12, #16, #32, #33 merged; live check partly done: hooks fire, band details unverified. **Pending live checks:** (a) 0.1.2: make a to-do list, leave the chat for a minute, come back, and the list should still show; (b) 0.2.0: with a list and a subagent running, `/helpdesk` should draw the pane, or reply "not drawn" with a reason (the pane has never been seen drawing); (c) still unverified from 0.1.1: the subagent token count and a "running" row before "done").
    0.1.1 added an optional debug row (setting `debug`, off by default) that always
    draws and counts task tool calls, subagent spawns and subagent steps seen, to tell
    "not loaded" from "hooks never fire" from "events dropped". Known gap: a
@@ -326,16 +326,32 @@ else first), **parked**, **done**.
    - Smallest first version: a read-only band above the prompt with the to-do
      list (in-progress item highlighted) and the count of running subagents
      with their tokens. The side pane of cards comes later.
-   Open after 0.1.0: the live check, then flashing, the side pane, and whether
-   per-card dollars are worth a price table kept inside Help Desk alone.
+   Since 0.1.0: the list and cards survive a chat switch, and a `TaskUpdate` for
+   an unseen task shows as a placeholder (0.1.2, PR #32); the `/helpdesk` pane with
+   the full list and a card per subagent (0.2.0, PR #33; cards cannot show what a
+   subagent is doing now, since the engine's agent list has no such field). Open:
+   the live checks above, flashing, and whether per-card dollars are worth a price
+   table kept inside Help Desk alone.
 4. **Project Planner and Manager** (gated, owner decision). Adopt
    benjamininja's planner / builder-manager / owner-queue setup on the owner's
    Windows machine (his handoff doc: `docs/handoff/baseball-session-dispatch.md`).
    Do not rebuild it. Later, optionally, a thin read-only mod showing open items
    from `MEMORY.md`, GitHub issue and PR state, and the queue file.
-5. **Cache Keeper upkeep** (next, owner steps left).
+5. **Cache Keeper upkeep** (next, owner steps left). Now 1.2.1.
    - Live check that the cache lifetime is learned: done 2026-11-23, 1h (see Live
      checks above).
+   - 1.2.1 (PR #30): each chat's last reply is saved per chat, so a chat you leave
+     and return to shows a real countdown, not "resumed · cache probably cold".
+     **Pending live check:** reply in a chat, switch away for a couple of minutes,
+     come back, run `/cache`: it should show `warm` with your earlier turns and Σ,
+     not `Σ 0` and "0 turns seen". Relies on `startedAt` staying stable across a
+     resume and the plugin store persisting; neither is verified.
+   - Paused by the owner (2026-11-24): the cold-send guard check and the one-copy
+     check. A resumed chat now keeps its record, so the guard can fire on one; no
+     offline test covers the guard.
+   - `/handoff` pinning this `## Projects` section: not yet seen in a live chat
+     (the first run is the next `/handoff`; check that the section lands at the
+     bottom of `HANDOFF.md`).
    - Done, 1.2.0, PR #5: `/handoff` appends one section of a file verbatim
      (`pinnedFile` default `PLAN.md`, `pinnedHeading` default `## Projects`) so
      a list survives the under-400-word summary. Not yet seen in a live chat.
@@ -433,6 +449,14 @@ else first), **parked**, **done**.
 - [ ] A `docs/` folder and ADRs, once decisions need alternatives written down.
 
 ## Shipped
+- 2026-11-24: Help Desk 0.2.0, PR #33: the `/helpdesk` pane (full to-do list and a
+  card per subagent); 48 new offline tests.
+- 2026-11-24: Help Desk 0.1.2, PR #32: the list and cards survive a chat switch; a
+  `TaskUpdate` for an unseen task shows as a placeholder; 45 new offline tests.
+- 2026-11-24: Brain Dump 0.3.1, PR #31: the band count is re-read on every prompt;
+  12 new offline tests.
+- 2026-11-23: Cache Keeper 1.2.1, PR #30: a per-chat record so a returned-to chat
+  shows real time away, not "resumed"; 25 new offline tests.
 - 2026-11-22: Brain Dump 0.3.0, PR #17: `/dump` renamed `/braindump` (the engine
   refuses a name a user skill holds); tests changed first and failed on the old name.
 - 2026-11-22: Help Desk 0.1.1, PR #16: optional debug row with hook counters; 19 new
