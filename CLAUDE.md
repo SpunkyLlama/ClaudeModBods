@@ -96,6 +96,8 @@ runner cannot run it.
   PR #23 (2026-11-23), so branches of merged PRs delete themselves. All other
   remote branches were deleted by the owner (checked 2026-11-23: only `main`
   remains). If one lingers, delete it in the web UI: cloud sessions get a 403.
-  No branch protection yet.
-- The live check that the cache lifetime is learned after a pause over 5.5
-  minutes has not been done.
+  `main` has had a ruleset since 2026-11-24 (requires `tests` and `validate`,
+  approvals 0, no bypass).
+- The cache lifetime is learned (1h, checked 2026-11-23). Not yet live-checked:
+  the Cache Keeper 1.2.1 fix (a chat left and returned to shows a warm countdown,
+  not "resumed"), the cold-send guard, and the one-copy check; see `PLAN.md`.
