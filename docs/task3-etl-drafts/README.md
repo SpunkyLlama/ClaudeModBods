@@ -35,7 +35,8 @@ the ETL's own code-review ruleset (see "Gaps" below).
    name is in any committed file. It needs `python` (3.11, as CI uses) on `PATH`
    where dispatch runs, so start the manager session from an **Anaconda
    PowerShell Prompt** with a Python 3.11 environment active. `.gitignore` needs
-   `.venv/` and `builder-state/`.
+   `.claude/worktrees/` (where `dispatch.ps1` makes each worktree), `.venv/` and
+   `builder-state/`.
 2. **The merge rule is per dispatched ticket, not per session.** His
    `session-dispatch` skill says "A builder's PR for a dispatched ticket needs no
    further word from the owner." Your word is "dispatch this ticket now". A
@@ -89,8 +90,9 @@ I would pick (c) first, then (b). It is your call; his doc recommends (a).
 3. **Git hygiene** (yours): branch protection requiring `pytest`; delete `master`
    and merged branches in the web UI; auto-delete of head branches.
 4. **Green**: exists (73 tests, green on `a80630d`); written into the draft.
-5. **ETL PR for me to open (on your word):** `.gitignore` gets `.venv/`,
-   and `builder-state/`.
+5. **ETL `.gitignore` PR** (ETL repo PR 21, opened 2026-11-24; check that it is
+   merged): `.gitignore` gets `.claude/worktrees/`, `.venv/` and `builder-state/`,
+   the same three paths the plugin author's own repo ignores.
 6. **Dispatch files** (yours, by hand): the five files above and the four agent
    files; `dispatch-projects.json` in the user profile.
 7. **Queue**: `NEEDS-OWNER.md` in the main checkout; `Session:` lines from
