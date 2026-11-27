@@ -1,13 +1,14 @@
 import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
-import { EMPTY, addCard, addUsage, bandText, bump, ensureCommand, fromTodoWrite, paneLines, paneNote, syncStatuses, taskCreated, taskUpdated, tokensOf } from './desk'
+import { EMPTY, addCard, addUsage, bandText, bump, ensureCommand, fromTodoWrite, paneLines, paneNote, spawnBegan, spawnEnded, startingOf, syncCards, taskCreated, taskUpdated, tokensOf } from './desk'
 import type { CommandState } from './desk'
+import type { Desk } from '../types'
 import { chatKey, excessKeys, restoreDesk } from './resume'
 
 // All state lives in the session's state atom, not module variables: the app may
 // reload the module between turns. Change the tag if Desk changes.
-const desk = atom({ plugin: 'help-desk', key: 'desk' } as const, EMPTY, { shape: 'desk-2' })
+const desk = atom({ plugin: 'help-desk', key: 'desk' } as const, EMPTY, { shape: 'desk-3' })
 
 // Whether the pane drew the last time it was opened, for the debug row (see paneNote).
 const pane = atom({ plugin: 'help-desk', key: 'pane' } as const, '')
@@ -70,27 +71,39 @@ async function warmCommand($: any, state: CommandState) {
   }
 }
 
-// Top-level, because the validator follows `$` only into top-level functions.
-// $.agent.list() is how a finished subagent is noticed: the engine has no event
-// for it, and drops the entry seconds after the agent ends.
-async function poll($: any) {
-  const before = await read($, desk)
-  if (!before.cards.some(c => c.status === 'running' || c.status === 'idle')) {
-    return // nothing to watch: no call, no redraw
+// Counts a spawn under way (or its end) in the desk. Fails open: a store problem must never
+// hold up or break the spawn it watches. Top-level so the validator follows `$`.
+async function noteStarting($: any, change: (d: Desk) => Desk) {
+  try {
+    await update($, desk, change)
+  } catch {
+    // fail open
   }
-  const listed = (await $.agent.list()) as { id: string; status: string }[]
-  const now = (await $.clock.now()) as number
-  let isChanged = false
-  await update($, desk, d => {
-    const cards = syncStatuses(d.cards, listed, now)
-    if (cards === d.cards) {
-      return d
+}
+
+// Top-level, because the validator follows `$` only into top-level functions.
+// $.agent.list() is how a finished subagent is noticed (the engine has no event for it, and
+// drops the entry seconds after the agent ends), and how a running one the spawn hook missed
+// is found. So it is asked on every tick, even with no card: a call that changes nothing
+// redraws nothing. Never throws: it runs from a timer.
+async function poll($: any) {
+  try {
+    const listed = (await $.agent.list()) as { id: string; status: string; description?: string; type?: string; kind?: string }[]
+    const now = (await $.clock.now()) as number
+    let isChanged = false
+    await update($, desk, d => {
+      const cards = syncCards(d.cards, listed, now)
+      if (cards === d.cards) {
+        return d
+      }
+      isChanged = true
+      return { ...d, cards }
+    })
+    if (isChanged) {
+      await persist($)
     }
-    isChanged = true
-    return { ...d, cards }
-  })
-  if (isChanged) {
-    await persist($)
+  } catch {
+    // fail open: the next tick looks again
   }
 }
 
@@ -106,6 +119,7 @@ export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
     await warmCommand($, cmd)
     await restoreChat($)
+    await noteStarting($, d => (startingOf(d) === 0 ? d : { ...d, starting: 0 })) // a reload mid-spawn leaves a stale count
     timer?.cancel()
     timer = $.clock.every(POLL_MS, () => void poll($))
     return next(e)
@@ -190,32 +204,40 @@ export const register: Register = (on, options) => {
 
   // ── Subagents ───────────────────────────────────────────────────────────────
 
-  // Start: observe only, the spawn goes through unchanged. A subagent this mod
-  // started itself would step past plugin hooks, but this mod starts none.
+  // Start: observe only, the spawn goes through unchanged. "N starting…" shows from the moment
+  // the hook is entered until the engine answers, so the band is not blank while a subagent
+  // starts. A subagent this mod started itself would step past plugin hooks, but this mod starts none.
   on('agent.spawn', async ($, e, next) => {
-    const r = await next(e)
-    await update($, desk, d => bump(d, 'spawns'))
-    if (r.deny === undefined && r.agentId !== undefined) {
-      const id = r.agentId
-      const now = await $.clock.now()
-      await update($, desk, d => ({
-        ...d,
-        cards: addCard(d.cards, { id, label: e.description, kind: e.subagentType, model: r.model, now }),
-      }))
-      await persist($)
+    await noteStarting($, spawnBegan)
+    try {
+      const r = await next(e)
+      await update($, desk, d => bump(d, 'spawns'))
+      if (r.deny === undefined && r.agentId !== undefined) {
+        const id = r.agentId
+        const now = await $.clock.now()
+        await update($, desk, d => ({
+          ...d,
+          cards: addCard(d.cards, { id, label: e.description, kind: e.subagentType, model: r.model, now }),
+        }))
+        await persist($)
+      }
+      return r
+    } finally {
+      await noteStarting($, spawnEnded)
     }
-    return r
   }).catch(OPEN)
 
   // This mod READS SUBAGENT TURNS (unlike Cache Keeper, which ignores them): each
-  // request a subagent makes adds its tokens to that subagent's card.
+  // request a subagent makes adds its tokens to that subagent's card, and an agent met here
+  // with no card yet (the spawn hook has not answered, or never will) gets one.
   on('turn.step', async function* ($, e, next) {
     const r = yield* next(e)
     if (e.agentId !== undefined && r.usage) {
       const id = e.agentId
       const tokens = tokensOf(r.usage)
-      await update($, desk, d => ({ ...bump(d, 'steps'), cards: addUsage(d.cards, id, tokens) }))
       const now = (await $.clock.now()) as number
+      const model = (r.usage as any).model as string | undefined
+      await update($, desk, d => ({ ...bump(d, 'steps'), cards: addUsage(d.cards, id, tokens, { now, model }) }))
       if (now - lastSavedAt > SAVE_EVERY_MS) {
         lastSavedAt = now
         await persist($)

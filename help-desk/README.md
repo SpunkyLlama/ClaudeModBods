@@ -7,7 +7,7 @@ A Claude Code mod that shows what Claude is working on, in one row above the pro
 ```
 
 - **To-do list.** The item in progress (its "doing" wording), with how many are done, or the next pending item, or "✓ 7/7 done". It follows both to-do tools Claude Code has (`TodoWrite`, and `TaskCreate` / `TaskUpdate`). Only the main chat's list is shown, not a subagent's own.
-- **Subagents.** How many are running, the first two with their tokens, and how many have finished (failures flagged). A card appears when a subagent starts and is marked done when the engine's agent list stops showing it.
+- **Subagents.** How many are running, the first two with their tokens, and how many have finished (failures flagged). "1 starting…" shows from the moment Claude asks for a subagent until the engine answers (0.2.1), a card appears when it starts, and it is marked done when the engine's agent list stops showing it. A running subagent the mod missed at its start is added from its own requests or from the agent list, named "Subagent a1b2c3d4" until the list gives its description (0.2.1).
 - **Read-only.** It watches and draws. It never blocks, rewrites or holds anything, writes no file in your project and makes no network call. If one of its hooks fails, the call it watched goes through untouched.
 - **Keeps your list when you leave a chat.** Coming back to a chat starts a fresh session, so the mod saves each chat's to-do text, subagent labels and counters in its own plugin store (nothing from the conversation, newest 50 chats) and restores them on return. A `TaskUpdate` for a task it never saw is shown as a placeholder (named by its subject if it has one, else "Task 3"), so progress still counts.
 
@@ -40,6 +40,16 @@ Subagents · 1 running · 2 done
 - **If it does not draw,** `/helpdesk` says why when the engine gives a reason, and the debug row ends with `pane: drawn`, `pane: not drawn (reason)` or `pane: not opened`.
 - If the app refuses the name `/helpdesk` (a user skill of that name would win), a toast says so once.
 
+## 0.2.1: a running subagent should not leave the band blank
+
+Three changes, from reading the source after the band stayed blank while a subagent was thinking or creating:
+
+- **"N starting…"** shows from the moment the spawn hook is entered until the engine answers, so the start itself is no longer blank.
+- **Adoption from a subagent's own requests.** A request from an agent with no card creates one, so a subagent whose spawn hook never answered is still visible. When the spawn hook does answer, it names the card.
+- **The agent list is asked on every tick** (it was skipped when no card was running), so a running subagent the hook missed is added from the list. Only `local_agent`s are taken, never teammates.
+
+Not checked live: that any of this makes the band draw during a real run. The offline tests cover the logic and read the hook wiring from the source; the engine's hooks cannot run here. If the band is still blank, the debug row's two numbers (`agents`, `spawns`) say which case it is.
+
 ## Debug row (0.1.1)
 
 If the band stays blank, turn on the **Debug row** setting. The row then always draws, even with nothing to show:
@@ -57,9 +67,9 @@ The counters count only what happens after the mod loads, so a chat that already
 ## Limits
 
 - Draws only where the app attaches a display surface: `/cache` lists the "display surfaces" it sees. The terminal CLI has one, and so did a cloud session in the desktop app (seen 2026-11-22: `desktop`). Where none is attached, nothing shows. This band has not yet been seen drawing.
-- Finished subagents are noticed by checking the agent list every 1.5 seconds, because the engine has no "subagent finished" event for plugins. A subagent that starts and ends between two checks, before it is ever listed, is marked done after 15 seconds.
+- Finished subagents are noticed by checking the agent list every 1.5 seconds, because the engine has no "subagent finished" event for plugins. A card the list has never shown is marked done after 15 seconds with no request from its subagent (0.2.1: the 15 seconds run from its latest request, not from its start, and a later request reopens a card closed too early).
 - In-progress items are marked, not flashing. The pane is plain text: no clicking, no per-card dollars.
-- Subagents started by another plugin through `$.agent.spawn` are not seen (the engine skips plugin hooks for them).
+- Subagents started by another plugin through `$.agent.spawn` are not seen by the spawn hook (the engine skips plugin hooks for them). Since 0.2.1 one may still appear as an adopted card if the agent list shows it as running. Forks and workflow agents may appear the same way, and then count under "done". Not checked live.
 - The pane has never been seen drawing. The layout has offline tests; whether the desktop app, the terminal or a cloud session seats and draws it as the engine's type file describes has not been checked live.
 
 ## Install
@@ -73,6 +83,6 @@ The counters count only what happens after the mod loads, so a chat that already
 From this folder:
 
 ```
-node --experimental-strip-types tests/desk.test.ts
+for t in tests/*.test.ts; do node --experimental-strip-types $t; done
 claude plugin validate --strict .
 ```

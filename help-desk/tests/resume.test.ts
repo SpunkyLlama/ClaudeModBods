@@ -31,7 +31,7 @@ function check(name: string, got: unknown, want: unknown) {
 
 const TODO = { id: '3', text: 'Write tests', active: 'Writing tests', status: 'in_progress' } as any
 const CARD = { id: 'a1', label: 'scan repo', kind: 'Explore', model: 'haiku', status: 'running', tokens: 12000, steps: 4, startedAt: 1700000000000, seen: true } as any
-const DESK = { todos: [TODO], cards: [CARD], seen: { calls: 5, spawns: 1, steps: 4 } }
+const DESK = { todos: [TODO], cards: [CARD], seen: { calls: 5, spawns: 1, steps: 4 }, starting: 0 }
 
 // ── chatKey / excessKeys: the same small helpers Cache Keeper has ────────────
 console.log('chatKey and excessKeys')
@@ -48,7 +48,7 @@ check('a full record is returned as it was', restoreDesk(DESK), DESK)
 check('read back through JSON it is the same', restoreDesk(JSON.parse(JSON.stringify(DESK))), DESK)
 check('a record with only a to-do list is fine', restoreDesk({ ...DESK, cards: [] }), { ...DESK, cards: [] })
 check('a record with only cards is fine', restoreDesk({ ...DESK, todos: [] }), { ...DESK, todos: [] })
-check('a record without counters gets zeros', restoreDesk({ todos: [TODO], cards: [] }), { todos: [TODO], cards: [], seen: { calls: 0, spawns: 0, steps: 0 } })
+check('a record without counters gets zeros', restoreDesk({ todos: [TODO], cards: [] }), { todos: [TODO], cards: [], seen: { calls: 0, spawns: 0, steps: 0 }, starting: 0 })
 check('extra fields are dropped', restoreDesk({ ...DESK, junk: 1, todos: [{ ...TODO, extra: 'x' }] }), DESK)
 
 console.log('restoreDesk: bad or empty records are refused')
@@ -97,7 +97,7 @@ console.log('wiring in register.tsx')
   check('a subagent spawn saves the desk', body("on('agent.spawn'", 900).includes('await persist($)'), true)
   check('the poll saves when a card changed', body('async function poll', 1100).includes('await persist($)'), true)
   check('subagent steps are throttled, not saved every time', body("on('turn.step'", 900).includes('SAVE_EVERY_MS'), true)
-  check('the two store helpers and the command helper fail open', (src.match(/\/\/ fail open/g) ?? []).length, 3)
+  check('the store helpers, the command helper, the spawn counter and the poll fail open', (src.match(/\/\/ fail open/g) ?? []).length, 5)
   check('the desk is only ever written to the store through persist', (src.match(/\$\.store\.set/g) ?? []).length, 1)
 }
 
@@ -116,6 +116,17 @@ console.log('shared helpers match the Cache Keeper copy')
   const theirs = pick(readFileSync('../cache-keeper/hooks/resume.ts', 'utf8') as string)
   check('the four shared definitions are non-empty', mine.length > 200 && !mine.includes('undefined'), true)
   check('they are identical to Cache Keeper\'s', mine === theirs, true)
+}
+
+// ── 0.2.1: the new card fields and the count that is never restored ──────────
+console.log('restoreDesk: adopted, activeAt and starting')
+{
+  const adoptedCard = { ...CARD, adopted: true, activeAt: 1700000005000 }
+  check('adopted and activeAt come back', restoreDesk({ ...DESK, cards: [adoptedCard] }), { ...DESK, cards: [adoptedCard] })
+  check('a card without them stays without them', JSON.stringify(restoreDesk(DESK)).includes('adopted'), false)
+  check('a stored starting count is not restored', (restoreDesk({ ...DESK, starting: 5 }) as any).starting, 0)
+  check('adopted that is not a boolean is refused', restoreDesk({ ...DESK, cards: [{ ...CARD, adopted: 'yes' }] }), null)
+  check('activeAt that is not a count is refused', restoreDesk({ ...DESK, cards: [{ ...CARD, activeAt: -1 }] }), null)
 }
 
 console.log(`\n${passed} passed, ${failures.length} failed`)
