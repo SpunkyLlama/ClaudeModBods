@@ -40,11 +40,16 @@ function toCard(v: unknown): Card | null {
   if (
     !isObject(v) || !isText(v.id) || !isText(v.label) || !isText(v.kind) || !isText(v.model) ||
     !CARD_STATUSES.includes(v.status as string) || !isCount(v.tokens) || !isCount(v.steps) ||
-    !isCount(v.startedAt) || typeof v.seen !== 'boolean'
+    !isCount(v.startedAt) || typeof v.seen !== 'boolean' ||
+    (v.adopted !== undefined && typeof v.adopted !== 'boolean') || (v.activeAt !== undefined && !isCount(v.activeAt))
   ) {
     return null
   }
-  return { id: v.id, label: v.label, kind: v.kind, model: v.model, status: v.status as Card['status'], tokens: v.tokens, steps: v.steps, startedAt: v.startedAt, seen: v.seen }
+  return {
+    id: v.id, label: v.label, kind: v.kind, model: v.model, status: v.status as Card['status'], tokens: v.tokens, steps: v.steps, startedAt: v.startedAt, seen: v.seen,
+    ...(v.adopted === undefined ? {} : { adopted: v.adopted }),
+    ...(v.activeAt === undefined ? {} : { activeAt: v.activeAt }),
+  }
 }
 
 // A stored desk, checked field by field and copied, or null. Refused whole when anything is
@@ -73,5 +78,6 @@ export function restoreDesk(raw: unknown): Desk | null {
   if (todos.length === 0 && cards.length === 0) {
     return null
   }
-  return { todos: todos as Todo[], cards: cards as Card[], seen }
+  // `starting` is never restored: a spawn under way in another session means nothing here.
+  return { todos: todos as Todo[], cards: cards as Card[], seen, starting: 0 }
 }

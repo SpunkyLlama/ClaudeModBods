@@ -160,5 +160,17 @@ console.log('wiring in register.tsx')
   check('the band hook is still there', src.includes("{ component: 'AbovePrompt' }"), true)
 }
 
+// ── 0.2.1: the pane shows a spawn under way ──────────────────────────────────
+console.log('paneLines: starting')
+{
+  const d = { ...desk([], []), starting: 1 }
+  const t = texts(paneLines(d, 30))
+  check('the header counts the spawn', t.includes('Subagents · 1 starting'), true)
+  check('a row says it is starting, in place of "No subagents yet."', t.includes('  ⏳ 1 starting…') && !t.includes('  No subagents yet.'), true)
+  check('with cards the row is not added, the header still counts', texts(paneLines({ ...desk([], [card('a')]), starting: 2 }, 30)).some(x => x === 'Subagents · 2 starting · 1 running'), true)
+  check('the glance summary says it too', texts(paneLines(d, 30, { isGlance: true })), ['1 starting…'])
+  check('no field and zero look the same', texts(paneLines(desk([], []), 30)), texts(paneLines({ ...desk([], []), starting: 0 }, 30)))
+}
+
 console.log(`\n${passed} passed, ${failures.length} failed`)
 if (failures.length > 0) process.exitCode = 1

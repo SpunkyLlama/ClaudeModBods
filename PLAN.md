@@ -449,6 +449,13 @@ else first), **parked**, **done**.
 - [ ] A `docs/` folder and ADRs, once decisions need alternatives written down.
 
 ## Shipped
+- 2026-11-27: Help Desk 0.2.1 (branch `feat/help-desk-0.2.1`, PR not yet opened): three
+  fixes for the band staying blank while a subagent runs: "N starting…" from the spawn
+  hook's entry, a card adopted from a subagent's own requests, and the agent list asked
+  every tick so a running subagent the hook missed is added. 51 new offline tests, `tsc`
+  and `validate --strict` clean. Not checked live: that the band now draws during a run.
+  Reverses one pinned behavior on purpose (a request from an unknown agent id was
+  ignored; it now adopts a card, so forks and workflow agents may show as cards).
 - 2026-11-24: Help Desk 0.2.0, PR #33: the `/helpdesk` pane (full to-do list and a
   card per subagent); 48 new offline tests.
 - 2026-11-24: Help Desk 0.1.2, PR #32: the list and cards survive a chat switch; a

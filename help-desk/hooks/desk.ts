@@ -1,7 +1,7 @@
 // Pure helpers for Help Desk: no engine, no file access, so the tests run offline.
 import type { Card, Desk, Seen, Todo } from '../types'
 
-export const EMPTY: Desk = { todos: [], cards: [], seen: { calls: 0, spawns: 0, steps: 0 } }
+export const EMPTY: Desk = { todos: [], cards: [], seen: { calls: 0, spawns: 0, steps: 0 }, starting: 0 }
 export const MAX_CARDS = 8 // finished cards kept, newest last; running ones are never dropped
 export const GRACE_MS = 15_000 // a new card the agent list has not shown yet is not "ended"
 
@@ -80,8 +80,15 @@ export function taskUpdated(todos: Todo[], id: string, patch: TaskPatch): Todo[]
 // ── Subagent cards ───────────────────────────────────────────────────────────
 
 export function addCard(cards: Card[], c: { id: string; label: string; kind: string; model: string; now: number }): Card[] {
-  if (cards.some(x => x.id === c.id)) {
-    return cards
+  const known = cards.find(x => x.id === c.id)
+  if (known) {
+    // A card adopted from a subagent step or the agent list before the spawn hook answered has a
+    // placeholder name and no model: the spawn's own words replace them, once.
+    if (known.adopted !== true) {
+      return cards
+    }
+    const named = { ...known, label: c.label || c.kind || known.label, kind: c.kind || known.kind, model: c.model || known.model, adopted: false }
+    return cards.map(x => (x.id === c.id ? named : x))
   }
   const card: Card = {
     id: c.id,
@@ -97,16 +104,49 @@ export function addCard(cards: Card[], c: { id: string; label: string; kind: str
   return trim([...cards, card])
 }
 
-// One request of a subagent's loop. An id we never saw spawn (a fork, a workflow
-// agent) has no card and is ignored.
-export function addUsage(cards: Card[], id: string, tokens: number): Card[] {
+// One request of a subagent's loop. Given `opts` (the time, and the model it ran on), a request
+// from an id with no card adopts it: the spawn hook may not have answered yet, or never will
+// (a fork, a workflow agent), and a running agent must not be invisible. Without `opts` an
+// unknown id is ignored. A request also proves its agent alive: it moves `activeAt`, and revives
+// a card the list never confirmed that the grace period had closed too early.
+export function addUsage(cards: Card[], id: string, tokens: number, opts?: { now: number; model?: string }): Card[] {
   if (!cards.some(c => c.id === id)) {
-    return cards
+    if (opts === undefined) {
+      return cards
+    }
+    return trim([...cards, { ...placeholder(id, opts.now), model: opts.model ?? '', tokens, steps: 1, activeAt: opts.now }])
   }
-  return cards.map(c => (c.id === id ? { ...c, tokens: c.tokens + tokens, steps: c.steps + 1 } : c))
+  return cards.map(c => {
+    if (c.id !== id) {
+      return c
+    }
+    const alive = opts !== undefined && c.status === 'done' && !c.seen
+    return {
+      ...c,
+      tokens: c.tokens + tokens,
+      steps: c.steps + 1,
+      ...(opts === undefined ? {} : { activeAt: opts.now }),
+      ...(alive ? { status: 'running' as const } : {}),
+    }
+  })
 }
 
-export type Listed = { id: string; status: string }
+// A card for an agent met before the spawn hook named it: "Subagent a1b2c3d4", until a spawn or
+// the agent list gives the real description.
+const placeholder = (id: string, now: number, label = '', kind = ''): Card => ({
+  id,
+  label: label || `Subagent ${id.slice(0, 8)}`,
+  kind,
+  model: '',
+  status: 'running',
+  tokens: 0,
+  steps: 0,
+  startedAt: now,
+  seen: false,
+  adopted: true,
+})
+
+export type Listed = { id: string; status: string; description?: string; type?: string; kind?: string }
 
 const fromListed = (s: string): Card['status'] =>
   s === 'completed' ? 'done' : s === 'failed' || s === 'killed' ? 'failed' : s === 'idle' ? 'idle' : 'running'
@@ -125,7 +165,7 @@ export function syncStatuses(cards: Card[], listed: Listed[], now: number): Card
     let next: Card = c
     if (hit) {
       next = { ...c, seen: true, status: fromListed(hit.status) }
-    } else if (c.seen || now - c.startedAt > GRACE_MS) {
+    } else if (c.seen || now - (c.activeAt ?? c.startedAt) > GRACE_MS) {
       next = { ...c, status: 'done' }
     }
     if (next.status !== c.status || next.seen !== c.seen) {
@@ -135,6 +175,37 @@ export function syncStatuses(cards: Card[], listed: Listed[], now: number): Card
     return c
   })
   return changed ? trim(out) : cards
+}
+
+// Cards for running subagents the agent list shows and we have no card for (the spawn hook did
+// not fire, or has not answered yet), and real names for adopted cards the list can name. Only
+// `local_agent`s (subagents) are taken, never teammates. Returns the same array when nothing
+// changed. An agent that has a card, ended ones too, is never added a second time.
+export function adoptListed(cards: Card[], listed: Listed[], now: number): Card[] {
+  let out = cards
+  for (const l of listed) {
+    if (l.kind !== undefined && l.kind !== 'local_agent') {
+      continue
+    }
+    const at = out.findIndex(c => c.id === l.id)
+    if (at < 0) {
+      if (l.status === 'running') {
+        out = trim([...out, { ...placeholder(l.id, now, l.description ?? '', l.type ?? ''), seen: true }])
+      }
+      continue
+    }
+    const c = out[at]
+    const label = l.description ?? ''
+    if (c !== undefined && c.adopted === true && label !== '' && (c.label !== label || (l.type !== undefined && c.kind !== l.type))) {
+      out = out.map((x, i) => (i === at ? { ...x, label, kind: l.type ?? x.kind } : x))
+    }
+  }
+  return out
+}
+
+// One poll: adopt what the list shows that we missed, then bring every card's status in line.
+export function syncCards(cards: Card[], listed: Listed[], now: number): Card[] {
+  return syncStatuses(adoptListed(cards, listed, now), listed, now)
 }
 
 // Running cards always stay; of the finished ones only the newest MAX_CARDS.
@@ -162,15 +233,27 @@ export function todoLine(todos: Todo[]): string | null {
   return next ? `☐ ${cut(next.text, 48)} (${done}/${todos.length})` : `✓ ${done}/${todos.length} done`
 }
 
-// "2 running: scan repo 12k, fix tests 4k · 3 done". Null when no subagent was seen.
-export function agentsLine(cards: Card[]): string | null {
-  if (cards.length === 0) {
+// How many subagent spawns are under way: the hook was entered and the engine has not answered.
+// Zero for state written before the field existed, and never negative.
+export const startingOf = (d: { starting?: number }): number => Math.max(0, d.starting ?? 0)
+
+// A spawn began, or its answer came (or failed): the count behind "N starting…".
+export const spawnBegan = <T extends { starting?: number }>(d: T): T => ({ ...d, starting: startingOf(d) + 1 })
+export const spawnEnded = <T extends { starting?: number }>(d: T): T => ({ ...d, starting: Math.max(0, startingOf(d) - 1) })
+
+// "1 starting… · 2 running: scan repo 12k, fix tests 4k · 3 done". Null when no subagent was seen
+// and none is starting.
+export function agentsLine(cards: Card[], starting = 0): string | null {
+  if (cards.length === 0 && starting <= 0) {
     return null
   }
   const live = cards.filter(c => c.status === 'running' || c.status === 'idle')
   const ended = cards.filter(c => c.status === 'done' || c.status === 'failed')
   const failed = ended.filter(c => c.status === 'failed').length
   const parts: string[] = []
+  if (starting > 0) {
+    parts.push(`${starting} starting…`)
+  }
   if (live.length > 0) {
     const shown = live.slice(0, 2).map(c => `${cut(c.label, 22)} ${k(c.tokens)}`)
     const more = live.length > 2 ? ` +${live.length - 2}` : ''
@@ -202,8 +285,8 @@ export function debugLine(d: Pick<Desk, 'todos' | 'cards'> & { seen?: Partial<Se
 
 // The whole band row, or '' when there is nothing to show. With `isDebug` the row is never
 // empty: it says the mod is loaded, then adds whatever there is to show.
-export function bandText(d: Pick<Desk, 'todos' | 'cards'> & { seen?: Partial<Seen> }, isDebug = false, paneNote?: string): string {
-  const main = [todoLine(d.todos), agentsLine(d.cards)].filter((x): x is string => x !== null).join('  │  ')
+export function bandText(d: Pick<Desk, 'todos' | 'cards'> & { seen?: Partial<Seen>; starting?: number }, isDebug = false, paneNote?: string): string {
+  const main = [todoLine(d.todos), agentsLine(d.cards, startingOf(d))].filter((x): x is string => x !== null).join('  │  ')
   return isDebug ? [main, debugLine(d, paneNote)].filter(x => x !== '').join('  │  ') : main
 }
 
@@ -246,10 +329,11 @@ const cardRank = (c: Card) => (c.status === 'done' || c.status === 'failed' ? 1 
 // The pane's body as lines: the to-do list, then the subagent cards, trimmed to `room` rows.
 // With `isGlance` (the small widget seat) it is the band's summary instead. Every line fits
 // `cols`. When something is cut, the last line says how many items are hidden.
-export function paneLines(d: Pick<Desk, 'todos' | 'cards'>, room: number, opts: PaneOpts = {}): PaneLine[] {
+export function paneLines(d: Pick<Desk, 'todos' | 'cards'> & { starting?: number }, room: number, opts: PaneOpts = {}): PaneLine[] {
   const { cols, isGlance = false } = opts
+  const starting = startingOf(d)
   if (isGlance) {
-    const glance = [todoLine(d.todos), agentsLine(d.cards)].filter((x): x is string => x !== null)
+    const glance = [todoLine(d.todos), agentsLine(d.cards, starting)].filter((x): x is string => x !== null)
     return (glance.length === 0 ? ['Help Desk: nothing yet'] : glance).map(text => ({ text: fit(text, cols) }))
   }
   const rows = Math.max(MIN_PANE_ROWS, Math.floor(room))
@@ -259,7 +343,7 @@ export function paneLines(d: Pick<Desk, 'todos' | 'cards'>, room: number, opts: 
   const failed = d.cards.filter(c => c.status === 'failed').length
 
   const head1 = `To-do${d.todos.length > 0 ? ` · ${done}/${d.todos.length} done` : ''}`
-  const head2 = `Subagents${live > 0 ? ` · ${live} running` : ''}${ended > 0 ? ` · ${ended} done${failed > 0 ? ` (${failed} failed)` : ''}` : ''}`
+  const head2 = `Subagents${starting > 0 ? ` · ${starting} starting` : ''}${live > 0 ? ` · ${live} running` : ''}${ended > 0 ? ` · ${ended} done${failed > 0 ? ` (${failed} failed)` : ''}` : ''}`
 
   const items: Item[] = [
     ...d.todos.map((t, i): Item => ({ line: todoItem(t), section: 0, order: i, rank: todoRank(t) })),
@@ -283,7 +367,7 @@ export function paneLines(d: Pick<Desk, 'todos' | 'cards'>, room: number, opts: 
     ...(d.todos.length === 0 ? [{ text: '  No to-do list yet.', tone: 'dim' as Tone }] : body(0)),
     ...(hasSeparator ? [{ text: '' }] : []),
     { text: head2, tone: 'bold' },
-    ...(d.cards.length === 0 ? [{ text: '  No subagents yet.', tone: 'dim' as Tone }] : body(1)),
+    ...(d.cards.length === 0 ? [{ text: starting > 0 ? `  ⏳ ${starting} starting…` : '  No subagents yet.', tone: 'dim' as Tone }] : body(1)),
     ...(hidden.size > 0 ? [{ text: `  … ${hidden.size} hidden`, tone: 'dim' as Tone }] : []),
   ]
   return out.map(l => ({ ...l, text: fit(l.text, cols) }))

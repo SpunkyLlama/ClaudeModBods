@@ -62,8 +62,24 @@ console.log('wiring in register.tsx (the real hooks cannot run here, so check th
   check('agent.spawn hook counts a spawn', body("on('agent.spawn'").includes("bump(d, 'spawns')"), true)
   check('a subagent step is counted', src.includes("bump(d, 'steps')"), true)
   check('the band passes the flag and the pane note on', src.includes('bandText(await read($, desk), isDebug, await read($, pane))'), true)
-  check('the state tag was bumped with the new field', src.includes("{ shape: 'desk-2' }") && !src.includes("'desk-1'"), true)
+  check('the state tag was bumped with the new field', src.includes("{ shape: 'desk-3' }") && !src.includes("'desk-2'") && !src.includes("'desk-1'"), true)
   check('observer hooks still fail open', (src.match(/\.catch\(OPEN\)/g) ?? []).length >= 4, true)
+}
+
+console.log('0.2.1 wiring: a running subagent must not be invisible')
+{
+  const src = readFileSync('hooks/register.tsx', 'utf8') as string
+  const at = (s: string) => src.indexOf(s)
+  const spawn = src.slice(at("on('agent.spawn'"), at("on('turn.step'"))
+  check('the spawn hook counts a start before it calls next', spawn.indexOf('spawnBegan') >= 0 && spawn.indexOf('spawnBegan') < spawn.indexOf('await next(e)'), true)
+  check('the count ends in a finally, so a failed or denied spawn cannot leave it up', /finally\s*\{[^}]*spawnEnded/.test(spawn), true)
+  check('the card is added before the count ends', spawn.indexOf('addCard(') > 0 && spawn.indexOf('addCard(') < spawn.indexOf('spawnEnded'), true)
+  const step = src.slice(at("on('turn.step'"), at("on('ui.render', { component: 'AbovePrompt' }"))
+  check('a subagent step passes the time and model, so an unknown agent is adopted', step.includes('addUsage(d.cards, id, tokens, { now, model })'), true)
+  const poll = src.slice(at('async function poll'), at('export const register'))
+  check('the poll asks the agent list on every tick (no early return for "no cards")', poll.includes('$.agent.list()') && !poll.includes('nothing to watch') && !poll.includes('return // '), true)
+  check('the poll adopts through syncCards', poll.includes('syncCards('), true)
+  check('session.start clears a stale count', src.slice(at("on('session.start'"), at("on('session.attach'")).includes('starting: 0'), true)
 }
 
 console.log(`\n${passed} passed, ${failures.length} failed`)
