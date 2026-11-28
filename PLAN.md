@@ -368,9 +368,27 @@ else first), **parked**, **done**.
    layout is plain markdown, not checked against the `owner-queue` format.
    Later, ETL: Dependabot alerts, and the loaders' `read_text()` calls with no
    encoding (`fantrax_api.py:157`, `fantrax_api_load.py:147`; Windows-only risk, left
-   alone as loader files). Owner step: after ETL PR 23, run `etl.yml` once by hand
-   with `dry_run=true` and `skip_scrape=true` to see it work under read-only
-   permissions (not yet done; the PR's own CI does not run that workflow).
+   alone as loader files). Done 2026-11-28 (owner): `etl.yml` run by hand with
+   `dry_run=true` and `skip_scrape=true` after ETL PR 23 (run 46102447483, `main`
+   at `d123c6e`). The job and every step passed (scrape and convert skipped), so
+   read-only `contents: read` is verified. Nothing was truncated or inserted.
+   Findings, not yet acted on (the loader is an "always parks" file, so any fix
+   needs the owner's approval and merge):
+   - The final "Row count verification" table reads live Supabase
+     (`SELECT COUNT(*)`, `load_supabase_actions.py:589`), not the parsed batch
+     files. It flagged four player tables: hitters 3119 vs `EXPECTED` 3302,
+     pitchers 3566 vs 3692. The live counts equal the committed batch files
+     (last changed 2026-11-09), so the hardcoded `EXPECTED` (lines 569-577) looks
+     stale. Not proven: where 3302 and 3692 came from, or that no players were
+     lost in an earlier load. Compare against the 2026-11-23 weekly run's log.
+     Options: update the constants or use a tolerance.
+   - The step still ended `success` with "ROW COUNT MISMATCHES" in the log:
+     `main()` ends with `flush_log()` and no return, so the exit code is 0 either
+     way. A real mismatch in the weekly job would not turn it red.
+   - `skip_scrape=true` uses the batch files in the repo (2026-11-09), and the repo
+     has no Standings batch files, so a real `skip_scrape` run would reload the
+     player tables from that old data and leave the standings tables untouched.
+     Do not read the mismatch flag as a pass or fail for dispatched tickets.
 5. **Cache Keeper upkeep** (next, owner steps left). Now 1.2.1.
    - Live check that the cache lifetime is learned: done 2026-11-23, 1h (see Live
      checks above).
