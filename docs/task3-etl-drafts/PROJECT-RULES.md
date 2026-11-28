@@ -28,10 +28,12 @@ ticket").
   (`CLAUDE.md`, "Testing / Green");
 - the privacy guard `tests/test_no_user_paths.py` stays in the suite and
   passes: no hardcoded user path, no real name in any tracked file;
-- on a PR the code review covers: no blocking finding the manager upheld is
-  still open (`session-rules`, `references/code-review.md`). Manager runs it.
-  The ruleset skill is `<the ETL repo's own ruleset: not written yet, see
-  CLAUDE.md "Known mess"; until it exists, copy tools-code-review as a start>`.
+- the code review (`session-rules`, `references/code-review.md`) is **not run**
+  in this repo until it has its own ruleset skill, so Green has no review item
+  for now (owner's decision, 2026-11-27). A PR that touches a path under
+  "Always parks" still waits for the owner. Revisit when the repo has a few
+  builder PRs and a bug-fix history to build a ruleset from; do not copy
+  another repo's ruleset in its place.
 
 Not covered by Green (do not claim it is): the Selenium scraper, the Supabase
 TRUNCATE/INSERT step, the Fantrax standings parser, the date helpers

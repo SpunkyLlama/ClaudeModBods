@@ -60,12 +60,15 @@ have been lost before.
    (owner-approved). The user agent identifies the program only: no name, email
    or other personal contact (project 10). Remaining ETL steps are item 4 of the
    Objectives checklist (Projects, below).
-4. Owner: branch protection. ModBods is done (2026-11-24: `tests` and `validate`,
-   required approvals at 0, no bypass). ETL still has none: a ruleset requiring
-   `pytest`, with approvals at 0 (every session acts as the owner, and GitHub
-   does not let an author approve their own PR). Also auto-delete of merged
-   branches, and deleting `master` (the owner's old unused ETL branch) and the
-   merged branches in the web UI.
+4. Owner: branch protection. Done and checked over the API 2026-11-28, no linear
+   history by the owner's choice. ModBods `protect-main` (`tests` and `validate`,
+   approvals 0, no bypass) and ETL `main_protection_rule` (`pytest`, pinned to
+   GitHub Actions, approvals 0, no bypass), plus a `protect-tags` ruleset on both
+   (`*`: no deletes, no force pushes, no updates). Tag protection was read from the
+   rule configuration only, not tried on a real tag. Still open: auto-delete of
+   merged branches on the ETL repo (off; `fix/test-leagues-utf8` still exists),
+   deleting `master` and the merged branches in the web UI, and pinning ModBods
+   `validate` to GitHub Actions (it has no `integration_id`; `tests` does).
 5. Then Help Desk follow-ups (project 3), once its live check says what is wrong
    or missing: flashing, the side pane, per-card dollars.
 
@@ -337,6 +340,30 @@ else first), **parked**, **done**.
    Windows machine (his handoff doc: `docs/handoff/baseball-session-dispatch.md`).
    Do not rebuild it. Later, optionally, a thin read-only mod showing open items
    from `MEMORY.md`, GitHub issue and PR state, and the queue file.
+   Progress 2026-11-28 (ETL repo first). Drafts are in `docs/task3-etl-drafts/`
+   (`README.md` there lists every file and where it goes). Read at the pinned commit
+   `aefbc68`, not run: the plugin works, but a real `-Apply` start has not been
+   proven by his own tests. Decisions: only the `owner-queue` and
+   `session-dispatch-managers-build-review` plugins, loaded through
+   `CLAUDE_CODE_PLUGIN_DIRS` (his `relink_live.ps1` skipped); builders run
+   `.venv/Scripts/python.exe -m pytest -q` in a per-worktree `.venv`, from a second
+   ETL clone outside OneDrive; the manager merges a dispatched ticket's PR once the
+   owner invokes dispatch, except PRs touching `.github/workflows/`, `sql/`, loaders
+   or the scraper; no code review until the ETL has its own ruleset skill (so Green
+   has no review item; revisit after a few builder PRs).
+   Owner-side state: the second clone, a Python 3.11 environment and the `.claude`
+   files are in place locally; the files go to `main` by PR (they touch
+   `.claude/**`, so the owner merges it). Not yet verified: that `/plugin` shows
+   both plugins; the Node version for the queue CLI (needs 22.18 or later); his
+   answers on dispatch from the desktop app and on a manager with no ruleset
+   (his docs are silent); whether the owner's login stays in the draft
+   `PROJECT-RULES.md`; the first real dispatch (a tiny tests-only ticket, dry run
+   read line by line first). `hod-decision-engine` rules not checked (not readable
+   from the cloud session without attaching it).
+   Later, ETL: `permissions: contents: read` for `etl.yml` (the only workflow without
+   one; an owner-merge PR), Dependabot alerts, and the loaders' `read_text()` calls
+   with no encoding (`fantrax_api.py:157`, `fantrax_api_load.py:147`; Windows-only
+   risk, left alone as loader files).
 5. **Cache Keeper upkeep** (next, owner steps left). Now 1.2.1.
    - Live check that the cache lifetime is learned: done 2026-11-23, 1h (see Live
      checks above).
@@ -449,7 +476,12 @@ else first), **parked**, **done**.
 - [ ] A `docs/` folder and ADRs, once decisions need alternatives written down.
 
 ## Shipped
-- 2026-11-27: Help Desk 0.2.1 (branch `feat/help-desk-0.2.1`, PR not yet opened): three
+- 2026-11-28: ETL and ModBods rulesets verified over the API (see NEXT item 4). ETL
+  PR 22 merged earlier: `leagues.json` read as UTF-8, the one test that failed on
+  Windows only (72 passed, 1 failed there; 73 pass on Linux CI). ModBods PR 40 merged:
+  four git allow rules (`git fetch origin`, `git merge origin/main`, `git rm *`,
+  `git mv *`) in the builders settings draft.
+- 2026-11-27: Help Desk 0.2.1, PR #39 merged, CI green: three
   fixes for the band staying blank while a subagent runs: "N starting…" from the spawn
   hook's entry, a card adopted from a subagent's own requests, and the agent list asked
   every tick so a running subagent the hook missed is added. 51 new offline tests, `tsc`
