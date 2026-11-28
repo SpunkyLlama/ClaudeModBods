@@ -360,10 +360,11 @@ else first), **parked**, **done**.
    `PROJECT-RULES.md`; the first real dispatch (a tiny tests-only ticket, dry run
    read line by line first). `hod-decision-engine` rules not checked (not readable
    from the cloud session without attaching it).
-   Later, ETL: `permissions: contents: read` for `etl.yml` (the only workflow without
-   one; an owner-merge PR), Dependabot alerts, and the loaders' `read_text()` calls
-   with no encoding (`fantrax_api.py:157`, `fantrax_api_load.py:147`; Windows-only
-   risk, left alone as loader files).
+   Later, ETL: Dependabot alerts, and the loaders' `read_text()` calls with no
+   encoding (`fantrax_api.py:157`, `fantrax_api_load.py:147`; Windows-only risk, left
+   alone as loader files). Owner step: after ETL PR 23, run `etl.yml` once by hand
+   with `dry_run=true` and `skip_scrape=true` to see it work under read-only
+   permissions (not yet done; the PR's own CI does not run that workflow).
 5. **Cache Keeper upkeep** (next, owner steps left). Now 1.2.1.
    - Live check that the cache lifetime is learned: done 2026-11-23, 1h (see Live
      checks above).
@@ -476,6 +477,10 @@ else first), **parked**, **done**.
 - [ ] A `docs/` folder and ADRs, once decisions need alternatives written down.
 
 ## Shipped
+- 2026-11-28: ETL PR 23 merged: `permissions: contents: read` for `etl.yml`, the only
+  workflow without a permissions block (the job only checks out the code and uploads
+  logs; no token use found in the code or workflows). CI green, but that CI does not
+  run `etl.yml`, so it is unproven until a manual run.
 - 2026-11-28: ETL and ModBods rulesets verified over the API (see NEXT item 4). ETL
   PR 22 merged earlier: `leagues.json` read as UTF-8, the one test that failed on
   Windows only (72 passed, 1 failed there; 73 pass on Linux CI). ModBods PR 40 merged:
