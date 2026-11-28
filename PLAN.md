@@ -351,9 +351,15 @@ else first), **parked**, **done**.
    owner invokes dispatch, except PRs touching `.github/workflows/`, `sql/`, loaders
    or the scraper; no code review until the ETL has its own ruleset skill (so Green
    has no review item; revisit after a few builder PRs).
-   Owner-side state: the second clone, a Python 3.11 environment and the `.claude`
-   files are in place locally; the files go to `main` by PR (they touch
-   `.claude/**`, so the owner merges it). Not yet verified: that `/plugin` shows
+   Owner-side state: the second clone and a Python 3.11 environment are in place
+   locally. The `.claude` files merged to ETL `main` on 2026-11-28 as PR #25
+   (`8d39b76`, 11 files under `.claude/` only, `pytest` green; the owner merged it
+   because it touches `.claude/**`). The first push attempts had failed because
+   nothing was committed yet (the files were untracked); a search of the pushed
+   files found no `C:\Users` or `OneDrive` path and no personal name or email, and
+   `gh secret *` is in the deny list in both settings files. The merged remote
+   branch `chore/dispatch-setup` still exists (ETL auto-delete is off): the owner
+   deletes it in the web UI. Not yet verified: that `/plugin` shows
    both plugins; the Node version for the queue CLI (needs 22.18 or later); his
    answers on dispatch from the desktop app and on a manager with no ruleset
    (his docs are silent); whether the owner's login stays in the draft
