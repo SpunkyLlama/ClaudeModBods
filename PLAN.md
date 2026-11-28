@@ -360,6 +360,12 @@ else first), **parked**, **done**.
    `PROJECT-RULES.md`; the first real dispatch (a tiny tests-only ticket, dry run
    read line by line first). `hod-decision-engine` rules not checked (not readable
    from the cloud session without attaching it).
+   First dispatch ticket (low tier, tests only): ETL issue
+   [#24](https://github.com/SpunkyLlama/fantasy-baseball-etl/issues/24), "Tests:
+   cover the date helpers in `load_supabase_actions.py`" (posted 2026-11-28).
+   Adds `tests/test_date_helpers.py` only; expected values are hand-worked
+   literals, with no break-on-purpose step (owner's call). Not dispatched. Its
+   layout is plain markdown, not checked against the `owner-queue` format.
    Later, ETL: Dependabot alerts, and the loaders' `read_text()` calls with no
    encoding (`fantrax_api.py:157`, `fantrax_api_load.py:147`; Windows-only risk, left
    alone as loader files). Owner step: after ETL PR 23, run `etl.yml` once by hand
